@@ -1,0 +1,1240 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>판다 수학 탐험</title>
+<meta name="theme-color" content="#2f7d3a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="판다 수학">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-family:system-ui,sans-serif}
+img{max-width:100%}[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+/* Layout: one play column — status strip, 8×8 bamboo-forest board, d-pad, unit picker, dress-up shop; quiz opens as a full-screen card */
+:root{
+  color-scheme: light;
+  --sky:#eaf4e1;
+  --grass-a:#bfe0a6;
+  --grass-b:#b2d797;
+  --leaf:#2f7d3a;
+  --leaf-soft:#d3ebc3;
+  --ink:#1f2a22;
+  --card:#ffffff;
+  --gold:#f2b51d;
+  --gold-deep:#a8760a;
+  --right:#3e9b4a;
+  --miss:#d9534f;
+  --muted:#5b6b5e;
+  --display:"Jua","Gowun Dodum",system-ui,sans-serif;
+  --body:"Gowun Dodum",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{background:var(--sky);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--gold-deep);outline-offset:3px}
+.off{display:none!important}
+
+/* one-screen app: everything fits the phone without scrolling */
+html{height:100%;box-sizing:border-box}
+body{height:100%;overflow:hidden;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+button{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.app{height:100%;max-width:560px;margin:0 auto;padding-inline:14px;padding-block:10px 12px;display:flex;flex-direction:column;gap:8px}
+.board-wrap{flex:1 1 auto;min-height:0;display:grid;place-items:center;container-type:size}
+
+.top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.top h1{font-family:var(--display);font-weight:400;font-size:22px;margin:0;flex:1 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.top{flex-wrap:nowrap}
+.top h1 span{color:var(--leaf)}
+.pill{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:3px solid var(--ink);border-radius:999px;padding:4px 14px 4px 6px;font-family:var(--display);font-size:22px;font-variant-numeric:tabular-nums;box-shadow:0 3px 0 var(--ink)}
+.coin-ico{width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe58a,var(--gold) 55%,var(--gold-deep));border:2px solid var(--gold-deep);display:inline-grid;place-items:center;font-size:13px;color:var(--gold-deep);font-family:var(--display)}
+.pill.pop{animation:pop .35s ease}
+@keyframes pop{50%{transform:scale(1.15)}}
+.icon-btn{width:42px;height:42px;border-radius:50%;border:3px solid var(--ink);background:var(--card);box-shadow:0 3px 0 var(--ink);display:grid;place-items:center;padding:0}
+.icon-btn svg{width:22px;height:22px}
+
+.status{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.chip{font-family:var(--display);font-size:16px;background:var(--card);border:2px solid var(--ink);border-radius:999px;padding:2px 12px;color:var(--ink);font-variant-numeric:tabular-nums}
+.chip.stage{background:var(--leaf);color:#fff}
+.streak{display:inline-flex;align-items:center;gap:4px;margin-left:auto}
+.streak i{width:12px;height:12px;border-radius:50%;background:var(--leaf-soft);border:2px solid var(--ink);display:inline-block}
+.streak i.on{background:var(--gold)}
+
+.msg{background:var(--card);border:3px solid var(--ink);border-radius:16px;padding:4px 12px;font-family:var(--display);font-size:16px;line-height:1.35;min-height:calc(2.7em + 8px);display:flex;align-items:center}
+
+/* board */
+.board{position:relative;width:100%;aspect-ratio:1;border:3px solid var(--ink);border-radius:20px;overflow:hidden;box-shadow:0 5px 0 var(--ink);background:var(--grass-a);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+@supports (width:1cqw){ .board{width:calc(min(100cqw,100cqh) - 6px)} }
+.cells{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);width:100%;height:100%}
+.cell{position:relative;background:var(--grass-a);cursor:pointer}
+.cell.b{background:var(--grass-b)}
+.cell svg{position:absolute;left:8%;top:8%;width:84%;height:84%;overflow:visible}
+.cell.coin svg{animation:bob 1.6s ease-in-out infinite}
+.cell.box svg,.cell.star svg{animation:glow 2.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8%)}}
+@keyframes glow{50%{transform:scale(1.06)}}
+.cell.pop svg{animation:popcell .5s ease}
+@keyframes popcell{0%{transform:scale(.3)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+
+.panda{position:absolute;left:0;top:0;width:12.5%;height:12.5%;z-index:2;pointer-events:none;transition:transform .16s linear}
+.panda .inner{position:absolute;inset:0}
+.panda .inner.flip svg{transform:scaleX(-1)}
+.panda svg{position:absolute;left:-14%;bottom:2%;width:128%;height:auto;overflow:visible}
+.panda .inner.hop{animation:hop .16s ease}
+.panda .inner.bump{animation:bump .25s ease}
+.panda .inner.cheer{animation:cheer .6s ease}
+.panda .inner.shake{animation:shake .45s ease}
+@keyframes hop{50%{transform:translateY(-14%)}}
+@keyframes bump{40%{transform:translateX(8%)}}
+@keyframes cheer{30%{transform:translateY(-30%) scale(1.1)}60%{transform:translateY(0)}}
+@keyframes shake{25%,75%{transform:translateX(-8%)}50%{transform:translateX(8%)}}
+
+/* overlays */
+.overlay{position:absolute;inset:0;z-index:5;background:rgba(31,42,34,.45);display:flex;overflow-y:auto;padding:14px}
+#quiz{position:fixed;z-index:20}
+.qcard{margin:auto;width:100%;max-width:420px;background:var(--card);border:3px solid var(--ink);border-radius:24px;box-shadow:0 6px 0 var(--ink);padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px;position:relative}
+.qcard .tag{align-self:center;font-family:var(--display);font-size:14px;background:var(--leaf-soft);border-radius:999px;padding:2px 12px;text-align:center}
+.qcard .tag.star{background:#fde59a}
+.qcard .tag.review{background:#fde4c4}
+.qtext{font-family:var(--display);font-size:20px;line-height:1.45;text-align:center;text-wrap:balance}
+.qfig{display:flex;justify-content:center}
+.fig{display:block;width:100%;max-width:260px;height:auto}
+.fig text{font-family:var(--display);font-size:16px;fill:var(--ink)}
+.q{font-family:var(--display);font-size:clamp(32px,10vw,52px);line-height:1.15;text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
+.q.mid{font-size:clamp(21px,6.4vw,30px);white-space:normal}
+.q .ans{display:inline-block;min-width:1.4em;border-bottom:4px solid var(--ink);color:var(--leaf)}
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;font-size:.78em;margin:0 .12em}
+.fr span:first-child{border-bottom:2px solid currentColor;padding:0 .2em}
+.mx{white-space:nowrap}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.choices.long .choice{font-size:20px}
+.choices.one{grid-template-columns:1fr}
+.choice{font-family:var(--display);font-size:clamp(24px,7vw,30px);font-variant-numeric:tabular-nums;padding:8px 10px 8px 24px;border-radius:16px;border:3px solid var(--ink);background:#f6fbf1;box-shadow:0 4px 0 var(--ink);position:relative;transition:transform .08s,box-shadow .08s;line-height:1.25}
+.choice:hover{background:var(--leaf-soft)}
+.choice:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.choice .key{position:absolute;left:8px;top:3px;font-family:var(--body);font-size:11px;color:var(--muted)}
+.choice.right{background:var(--right);color:#fff}
+.choice.wrong{background:var(--miss);color:#fff}
+.choice.right .key,.choice.wrong .key{color:#fff;opacity:.8}
+.choice:disabled{cursor:default}
+.feedback{font-size:15px;text-align:center;min-height:1.5em;color:var(--muted);line-height:1.6}
+.feedback b{font-family:var(--display);font-weight:400;font-size:18px;color:var(--ink)}
+.feedback .explain{display:block;margin-top:6px;background:#f3f8ee;border-radius:12px;padding:8px 10px;color:var(--ink);text-align:left}
+.okbtn{align-self:center}
+.combo{position:absolute;left:50%;top:-18px;transform:translateX(-50%);font-family:var(--display);font-size:30px;color:var(--gold);-webkit-text-stroke:1.5px var(--ink);white-space:nowrap;animation:combo 1.2s ease forwards;pointer-events:none}
+@keyframes combo{0%{opacity:0;transform:translate(-50%,10px) scale(.6)}25%{opacity:1;transform:translate(-50%,0) scale(1.15)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-24px)}}
+
+/* picture graph */
+.pg{display:flex;flex-direction:column;gap:6px;border:2px solid var(--leaf-soft);border-radius:12px;padding:8px 10px;min-width:220px}
+.pg-row{display:flex;align-items:center;gap:8px}
+.pg-lab{font-family:var(--display);width:3.2em;flex:none}
+.pg-icons{display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+.cb,.cs{display:inline-block;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe58a,var(--gold) 55%,var(--gold-deep));border:2px solid var(--gold-deep)}
+.cb{width:24px;height:24px}
+.cs{width:13px;height:13px}
+.pg-key{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap;border-top:1px dashed var(--leaf-soft);padding-top:6px}
+
+.clearcard{text-align:center;align-items:center}
+.clearcard h2{font-family:var(--display);font-weight:400;font-size:34px;margin:0;color:var(--leaf)}
+.clearcard p{margin:0}
+.bigbtn{font-family:var(--display);font-size:22px;border:3px solid var(--ink);border-radius:999px;padding:6px 26px;background:var(--gold);box-shadow:0 4px 0 var(--ink)}
+.bigbtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+
+/* bottom bar: unit sheet · d-pad · shop sheet */
+.bottom{flex:none;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
+.side{justify-self:center;position:relative;width:68px;height:68px;border-radius:20px;border:3px solid var(--ink);background:var(--card);box-shadow:0 4px 0 var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0;font-family:var(--display);font-size:15px}
+.side svg{width:26px;height:26px}
+.side:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.side .dot{position:absolute;right:-6px;top:-6px;width:18px;height:18px;border-radius:50%;background:var(--miss);border:3px solid var(--card)}
+.hint b{font-family:var(--display);font-weight:400;color:var(--ink)}
+.dpad{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,44px);gap:4px}
+.dpad button{border:3px solid var(--ink);border-radius:14px;background:var(--card);box-shadow:0 3px 0 var(--ink);display:grid;place-items:center;padding:0}
+.dpad button:active,.dpad button.held{transform:translateY(3px);box-shadow:0 0 0 var(--ink);background:var(--leaf-soft)}
+.dpad svg{width:24px;height:24px}
+.dpad .u{grid-column:2;grid-row:1}.dpad .l{grid-column:1;grid-row:2}.dpad .r{grid-column:3;grid-row:2}.dpad .d{grid-column:2;grid-row:3}
+
+/* bottom sheets (units, shop) */
+.sheet-back{position:fixed;inset:0;z-index:14;background:rgba(31,42,34,.45)}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:15;max-width:560px;margin:0 auto;max-height:82%;overflow-y:auto;overscroll-behavior:contain;background:var(--card);border:3px solid var(--ink);border-bottom:0;border-radius:24px 24px 0 0;padding-inline:16px;padding-block:12px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px;animation:up .22s ease}
+@keyframes up{from{transform:translateY(40%);opacity:.4}}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sheet h2{font-family:var(--display);font-weight:400;font-size:22px;margin:0}
+.sheet .sub{margin:0;font-size:14px;color:var(--muted)}
+.close{font-family:var(--display);font-size:16px;border:2px solid var(--ink);border-radius:999px;padding:4px 16px;background:var(--leaf-soft)}
+.help{margin:0;font-size:14px;color:var(--muted);background:#f3f8ee;border-radius:12px;padding:8px 12px}
+.help b{font-family:var(--display);font-weight:400;color:var(--ink)}
+.units{display:flex;flex-wrap:wrap;gap:8px}
+.tbl{font-family:var(--display);font-size:16px;border:2px solid var(--ink);border-radius:12px;padding:4px 12px;background:#fff}
+.tbl[aria-pressed="true"]{background:var(--leaf);color:#fff}
+.shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.item{display:grid;grid-template-columns:44px 1fr;column-gap:10px;align-items:center;border:2px solid var(--leaf-soft);border-radius:16px;padding:8px 10px;background:#f8fcf4}
+.item.equipped{border-color:var(--leaf);background:#eef8e6}
+.item svg{grid-row:1 / span 2;width:44px;height:44px}
+.item .nm{font-family:var(--display);font-size:16px;line-height:1.2;min-width:0}
+.item button{justify-self:start;margin-top:4px;border:2px solid var(--ink);border-radius:999px;padding:2px 12px;font-family:var(--display);font-size:15px;background:var(--gold);display:inline-flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums}
+.item button .mini{width:14px;height:14px;border-radius:50%;background:#ffe58a;border:2px solid var(--gold-deep)}
+.item button.poor{background:#eee;color:#8a8f8b;border-color:#b9bfba;cursor:not-allowed}
+.item button.poor .mini{border-color:#b9bfba;background:#f4f4f4}
+.item button.wear{background:var(--leaf-soft)}
+.item button.on{background:var(--leaf);color:#fff}
+.stats{display:flex;gap:18px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.stats b{font-family:var(--display);font-weight:400;font-size:18px;color:var(--ink);font-variant-numeric:tabular-nums}
+
+.flycoin{position:fixed;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe58a,var(--gold) 55%,var(--gold-deep));border:2px solid var(--gold-deep);pointer-events:none;z-index:50}
+
+.tbl{min-height:44px}
+.choice{min-height:56px}
+@media (max-width:400px){
+  .qtext{font-size:18px}
+  .top h1{font-size:19px}
+  .pill{font-size:19px}
+  .side{width:60px;height:62px;font-size:14px}
+}
+@media (max-height:640px){
+  .dpad{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,38px)}
+  .side{height:56px}
+  .msg{font-size:14px}
+}
+/* phone turned sideways: map on the left, everything else on the right */
+@media (orientation:landscape) and (max-height:540px){
+  .app{max-width:none;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto 1fr auto;column-gap:16px;row-gap:8px}
+  .board-wrap{grid-column:1;grid-row:1 / -1;height:100%;aspect-ratio:1;width:auto}
+  .top,.status,.msg,.bottom{grid-column:2}
+  .msg{align-self:start}
+}
+@media (prefers-reduced-motion:reduce){
+  .cell svg,.panda .inner,.pill.pop{animation:none!important}
+  .panda{transition:none}
+}
+</style>
+
+<div class="app">
+  <header class="top">
+    <h1><span>판다</span> 수학 탐험</h1>
+    <div class="pill" id="coinPill" aria-live="polite"><span class="coin-ico">₩</span><span id="coinNum">0</span></div>
+    <button class="icon-btn" id="soundBtn" aria-label="소리 끄기" title="소리">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#1f2a22" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="#1f2a22"/><path id="waveA" d="M16.5 8.5a5 5 0 0 1 0 7"/><path id="waveB" d="M19 6a8.5 8.5 0 0 1 0 12"/><path id="muteX" class="off" d="M16 9l6 6M22 9l-6 6"/></svg>
+    </button>
+  </header>
+
+  <div class="status">
+    <span class="chip stage" id="stageChip">1단계</span>
+    <span class="chip" id="boxChip">남은 상자 6</span>
+    <span class="streak" id="streak" aria-label="연속 정답"></span>
+  </div>
+
+  <div class="msg" id="msg" aria-live="polite">지도를 손가락으로 밀거나 칸을 눌러서 ? 상자로 가 봐!</div>
+
+  <div class="board-wrap">
+  <div class="board" id="board" aria-label="대나무 숲 지도">
+    <div class="cells" id="cells"></div>
+    <div class="panda" id="panda">
+      <div class="inner" id="pandaInner">
+        <svg viewBox="0 0 220 240" aria-hidden="true">
+          <ellipse cx="110" cy="230" rx="66" ry="9" fill="#1f2a22" opacity=".18"/>
+          <ellipse cx="78" cy="208" rx="24" ry="19" fill="#1f2a22"/>
+          <ellipse cx="142" cy="208" rx="24" ry="19" fill="#1f2a22"/>
+          <ellipse cx="110" cy="165" rx="58" ry="55" fill="#ffffff" stroke="#1f2a22" stroke-width="5"/>
+          <ellipse cx="60" cy="158" rx="17" ry="30" fill="#1f2a22" transform="rotate(25 60 158)"/>
+          <ellipse cx="160" cy="158" rx="17" ry="30" fill="#1f2a22" transform="rotate(-25 160 158)"/>
+          <g id="acc-bamboo" class="off">
+            <rect x="168" y="84" width="14" height="136" rx="5" fill="#5aa64a" stroke="#1f2a22" stroke-width="4"/>
+            <path d="M168 118h14M168 158h14M168 196h14" stroke="#2f6b2a" stroke-width="4"/>
+            <path d="M182 102c12-11 25-9 31-4-10 8-21 9-31 4z" fill="#7cc35f" stroke="#1f2a22" stroke-width="3"/>
+            <ellipse cx="172" cy="170" rx="13" ry="11" fill="#1f2a22"/>
+          </g>
+          <circle cx="62" cy="50" r="21" fill="#1f2a22"/>
+          <circle cx="158" cy="50" r="21" fill="#1f2a22"/>
+          <ellipse cx="110" cy="86" rx="63" ry="55" fill="#ffffff" stroke="#1f2a22" stroke-width="5"/>
+          <ellipse cx="85" cy="85" rx="15" ry="20" fill="#1f2a22" transform="rotate(-22 85 85)"/>
+          <ellipse cx="135" cy="85" rx="15" ry="20" fill="#1f2a22" transform="rotate(22 135 85)"/>
+          <g id="eyes-open">
+            <circle cx="87" cy="83" r="7" fill="#fff"/><circle cx="88.5" cy="84.5" r="4" fill="#1f2a22"/>
+            <circle cx="133" cy="83" r="7" fill="#fff"/><circle cx="131.5" cy="84.5" r="4" fill="#1f2a22"/>
+          </g>
+          <g id="eyes-happy" class="off" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round">
+            <path d="M79 87q8-10 16 0"/><path d="M125 87q8-10 16 0"/>
+          </g>
+          <path id="tear" class="off" d="M78 98q-6 10 0 13q6-3 0-13z" fill="#7cc4f2" stroke="#1f2a22" stroke-width="2"/>
+          <ellipse cx="68" cy="106" rx="10" ry="6" fill="#f4a3a8" opacity=".8"/>
+          <ellipse cx="152" cy="106" rx="10" ry="6" fill="#f4a3a8" opacity=".8"/>
+          <ellipse cx="110" cy="101" rx="8" ry="5.5" fill="#1f2a22"/>
+          <path id="mouth-normal" d="M101 110q9 8 18 0" fill="none" stroke="#1f2a22" stroke-width="4" stroke-linecap="round"/>
+          <path id="mouth-happy" class="off" d="M99 108q11 18 22 0z" fill="#e2626a" stroke="#1f2a22" stroke-width="4" stroke-linejoin="round"/>
+          <path id="mouth-sad" class="off" d="M101 117q9-8 18 0" fill="none" stroke="#1f2a22" stroke-width="4" stroke-linecap="round"/>
+          <g id="acc-scarf" class="off">
+            <rect x="122" y="136" width="18" height="38" rx="6" fill="#3b6fd8" stroke="#1f2a22" stroke-width="4" transform="rotate(-12 130 138)"/>
+            <rect x="70" y="128" width="80" height="18" rx="9" fill="#3b6fd8" stroke="#1f2a22" stroke-width="4"/>
+            <path d="M86 131v12M102 131v12M118 131v12M134 131v12" stroke="#fff" stroke-width="4" opacity=".85"/>
+          </g>
+          <g id="acc-glasses" class="off">
+            <rect x="66" y="71" width="36" height="25" rx="9" fill="#2b3f55" stroke="#f4a3a8" stroke-width="5"/>
+            <rect x="118" y="71" width="36" height="25" rx="9" fill="#2b3f55" stroke="#f4a3a8" stroke-width="5"/>
+            <path d="M102 80q8-6 16 0" fill="none" stroke="#f4a3a8" stroke-width="5"/>
+          </g>
+          <g id="acc-ribbon" class="off" transform="translate(148 34) rotate(18)">
+            <path d="M0 0L-23-14L-23 14Z" fill="#e2453c" stroke="#1f2a22" stroke-width="3.5" stroke-linejoin="round"/>
+            <path d="M0 0L23-14L23 14Z" fill="#e2453c" stroke="#1f2a22" stroke-width="3.5" stroke-linejoin="round"/>
+            <circle r="7" fill="#c7362e" stroke="#1f2a22" stroke-width="3"/>
+          </g>
+          <g id="acc-hat" class="off">
+            <path d="M68 40Q110-8 152 40Z" fill="#e9c46a" stroke="#1f2a22" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M75 35Q110 25 145 35" fill="none" stroke="#d94a3d" stroke-width="8"/>
+            <ellipse cx="110" cy="42" rx="84" ry="13" fill="#f0d07e" stroke="#1f2a22" stroke-width="4"/>
+          </g>
+          <g id="acc-crown" class="off">
+            <path d="M78 42L73 8L94 24L110 1L126 24L147 8L142 42Z" fill="#f2b51d" stroke="#1f2a22" stroke-width="4" stroke-linejoin="round"/>
+            <circle cx="110" cy="29" r="6" fill="#d94a3d" stroke="#1f2a22" stroke-width="2.5"/>
+            <circle cx="90" cy="31" r="4" fill="#3b6fd8" stroke="#1f2a22" stroke-width="2"/>
+            <circle cx="130" cy="31" r="4" fill="#3b6fd8" stroke="#1f2a22" stroke-width="2"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <div class="overlay off" id="clear" role="dialog" aria-modal="true" aria-label="단계 통과">
+      <div class="qcard clearcard">
+        <h2 id="clearTitle">1단계 통과!</h2>
+        <p id="clearText">보너스 동전 25개를 받았어.</p>
+        <button class="bigbtn" id="nextBtn">다음 단계로</button>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <div class="bottom">
+    <button class="side" id="openUnits" aria-label="공부할 단원 고르기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#1f2a22" stroke-width="2.2" stroke-linejoin="round"><path d="M4 5.5C6.5 4 9.5 4 12 5.5v14C9.5 18 6.5 18 4 19.5z" fill="#d3ebc3"/><path d="M20 5.5C17.5 4 14.5 4 12 5.5v14c2.5-1.5 5.5-1.5 8 0z" fill="#ffffff"/></svg>
+      <span>단원</span>
+    </button>
+    <div class="dpad" aria-label="이동 버튼">
+      <button class="u" id="mvU" aria-label="위로"><svg viewBox="0 0 24 24"><path d="M12 5l7 9H5z" fill="#1f2a22"/></svg></button>
+      <button class="l" id="mvL" aria-label="왼쪽으로"><svg viewBox="0 0 24 24"><path d="M5 12l9-7v14z" fill="#1f2a22"/></svg></button>
+      <button class="r" id="mvR" aria-label="오른쪽으로"><svg viewBox="0 0 24 24"><path d="M19 12l-9 7V5z" fill="#1f2a22"/></svg></button>
+      <button class="d" id="mvD" aria-label="아래로"><svg viewBox="0 0 24 24"><path d="M12 19l-7-9h14z" fill="#1f2a22"/></svg></button>
+    </div>
+    <button class="side" id="openShop" aria-label="판다 꾸미기 가게 열기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#1f2a22" stroke-width="2.2" stroke-linejoin="round"><path d="M5 8h14l-1.2 12H6.2z" fill="#f2b51d"/><path d="M9 10V7a3 3 0 0 1 6 0v3" stroke-linecap="round"/></svg>
+      <span>가게</span>
+      <i class="dot off" id="shopDot" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <section class="sheet off" id="unitSheet" role="dialog" aria-modal="true" aria-labelledby="unitTitle">
+    <div class="sheet-head"><h2 id="unitTitle">공부할 단원</h2><button class="close" data-close>닫기</button></div>
+    <p class="sub">3학년 수학 · 여러 개 고를 수 있어요</p>
+    <div class="units" id="units"></div>
+    <p class="help">지도를 <b>손가락으로 밀면</b> 그 방향으로 걸어가고, 칸을 <b>누르면</b> 그 칸까지 걸어가요. 화살표 버튼은 <b>꾹 누르고 있으면</b> 계속 움직여요. <b>?</b> 상자는 동전 10개, <b>★</b> 별 상자는 어려운 문제로 30개!</p>
+  </section>
+
+  <section class="sheet off" id="shopSheet" role="dialog" aria-modal="true" aria-labelledby="shopTitle">
+    <div class="sheet-head"><h2 id="shopTitle">판다 꾸미기 가게</h2><button class="close" data-close>닫기</button></div>
+    <p class="sub">산 물건은 눌러서 입고 벗을 수 있어요</p>
+    <div class="shop" id="shop"></div>
+    <div class="stats">
+      <span>맞힌 문제 <b id="stSolved">0</b></span>
+      <span>최고 연속 <b id="stBest">0</b></span>
+      <span>최고 단계 <b id="stStage">1</b></span>
+    </div>
+  </section>
+</div>
+
+<div class="sheet-back off" id="sheetBack"></div>
+
+<div class="overlay off" id="quiz" role="dialog" aria-modal="true" aria-label="수학 문제">
+  <div class="qcard" id="qcard">
+    <span class="tag" id="qtag">? 상자</span>
+    <div class="qtext" id="qtext"></div>
+    <div class="qfig" id="qfig"></div>
+    <div class="q" id="question"></div>
+    <div class="choices" id="choices"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="bigbtn okbtn off" id="okBtn">알겠어!</button>
+  </div>
+</div>
+
+<script>
+(function(){
+const KEY = 'panda-quest-v1';
+const N = 8;
+const ITEMS = [
+  {id:'bamboo',  name:'대나무 간식', price:30,  slot:'hand',
+   icon:'<svg viewBox="0 0 48 48"><rect x="19" y="4" width="9" height="40" rx="3" fill="#5aa64a" stroke="#1f2a22" stroke-width="2"/><path d="M19 17h9M19 31h9" stroke="#2f6b2a" stroke-width="2.5"/><path d="M28 13c8-7 15-5 18-2-6 5-12 5-18 2z" fill="#7cc35f" stroke="#1f2a22" stroke-width="1.5"/></svg>'},
+  {id:'ribbon',  name:'빨간 리본',   price:50,  slot:'head',
+   icon:'<svg viewBox="0 0 48 48"><path d="M24 24L6 12v24z" fill="#e2453c" stroke="#1f2a22" stroke-width="2.5" stroke-linejoin="round"/><path d="M24 24l18-12v24z" fill="#e2453c" stroke="#1f2a22" stroke-width="2.5" stroke-linejoin="round"/><circle cx="24" cy="24" r="6" fill="#c7362e" stroke="#1f2a22" stroke-width="2.5"/></svg>'},
+  {id:'glasses', name:'핑크 선글라스', price:80, slot:'face',
+   icon:'<svg viewBox="0 0 48 48"><rect x="3" y="16" width="18" height="14" rx="5" fill="#2b3f55" stroke="#f4a3a8" stroke-width="3"/><rect x="27" y="16" width="18" height="14" rx="5" fill="#2b3f55" stroke="#f4a3a8" stroke-width="3"/><path d="M21 21q3-3 6 0" fill="none" stroke="#f4a3a8" stroke-width="3"/></svg>'},
+  {id:'hat',     name:'밀짚모자',    price:120, slot:'head',
+   icon:'<svg viewBox="0 0 48 48"><path d="M12 30Q24 4 36 30z" fill="#e9c46a" stroke="#1f2a22" stroke-width="2.5"/><path d="M14 26q10-4 20 0" stroke="#d94a3d" stroke-width="4" fill="none"/><ellipse cx="24" cy="31" rx="21" ry="6" fill="#f0d07e" stroke="#1f2a22" stroke-width="2.5"/></svg>'},
+  {id:'scarf',   name:'파란 목도리', price:160, slot:'neck',
+   icon:'<svg viewBox="0 0 48 48"><rect x="27" y="22" width="9" height="20" rx="3" fill="#3b6fd8" stroke="#1f2a22" stroke-width="2.5" transform="rotate(-10 31 22)"/><rect x="4" y="15" width="40" height="11" rx="5.5" fill="#3b6fd8" stroke="#1f2a22" stroke-width="2.5"/><path d="M12 17v7M20 17v7M28 17v7M36 17v7" stroke="#fff" stroke-width="2.5"/></svg>'},
+  {id:'crown',   name:'황금 왕관',   price:300, slot:'head',
+   icon:'<svg viewBox="0 0 48 48"><path d="M8 38L5 10l11 10 8-14 8 14 11-10-3 28z" fill="#f2b51d" stroke="#1f2a22" stroke-width="2.5" stroke-linejoin="round"/><circle cx="24" cy="28" r="4" fill="#d94a3d" stroke="#1f2a22" stroke-width="1.5"/></svg>'}
+];
+const TILE = {
+  rock:'<svg viewBox="0 0 40 40"><path d="M5 31Q3 19 13 14Q19 6 28 11Q37 15 36 27Q35 35 25 35H12Q5 35 5 31z" fill="#a9b0a5" stroke="#1f2a22" stroke-width="2.5"/><path d="M14 18q4-4 9-3" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" opacity=".7"/></svg>',
+  bamboo:'<svg viewBox="0 0 40 40"><rect x="8" y="4" width="6" height="34" rx="2.5" fill="#5aa64a" stroke="#1f2a22" stroke-width="2"/><rect x="17" y="0" width="6" height="38" rx="2.5" fill="#6cb85a" stroke="#1f2a22" stroke-width="2"/><rect x="26" y="7" width="6" height="31" rx="2.5" fill="#5aa64a" stroke="#1f2a22" stroke-width="2"/><path d="M8 18h6M17 14h6M26 22h6M8 30h6M17 28h6" stroke="#2f6b2a" stroke-width="2"/><path d="M23 9c6-5 12-4 15-2-5 4-10 4-15 2z" fill="#86c96b" stroke="#1f2a22" stroke-width="1.5"/></svg>',
+  box:'<svg viewBox="0 0 40 40"><rect x="4" y="6" width="32" height="30" rx="5" fill="#e8a33d" stroke="#1f2a22" stroke-width="2.5"/><path d="M4 15h32" stroke="#1f2a22" stroke-width="2.5"/><path d="M15.5 22.5q0-4.5 4.5-4.5t4.5 4q0 3-4.5 4.2v2.3" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="20" cy="33" r="2.1" fill="#fff"/></svg>',
+  star:'<svg viewBox="0 0 40 40"><rect x="4" y="6" width="32" height="30" rx="5" fill="#f2b51d" stroke="#1f2a22" stroke-width="2.5"/><path d="M4 15h32" stroke="#1f2a22" stroke-width="2.5"/><path d="M20 18l3 6 6.5.6-5 4.3 1.6 6.4L20 32l-6 3.3 1.5-6.4-5-4.3 6.6-.6z" fill="#fff" stroke="#1f2a22" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  coin:'<svg viewBox="0 0 40 40"><ellipse cx="20" cy="35" rx="8" ry="2.5" fill="#1f2a22" opacity=".15"/><circle cx="20" cy="20" r="10" fill="#f2b51d" stroke="#a8760a" stroke-width="2.5"/><circle cx="20" cy="20" r="5.5" fill="none" stroke="#ffe58a" stroke-width="2.5"/></svg>',
+  done:'<svg viewBox="0 0 40 40"><g fill="#f7b7c4" stroke="#1f2a22" stroke-width="1.5"><circle cx="20" cy="12" r="6"/><circle cx="28" cy="18" r="6"/><circle cx="25" cy="27" r="6"/><circle cx="15" cy="27" r="6"/><circle cx="12" cy="18" r="6"/></g><circle cx="20" cy="20" r="5" fill="#f2b51d" stroke="#1f2a22" stroke-width="1.5"/></svg>'
+};
+const CHEERS = ['정답이야!','상자가 열렸다!','역시 최고야!','척척박사네!','우와, 잘했어!'];
+
+let S, G, streak = 0, quiz = null, walkQ = [], walking = false, lastMove = 0, sound = true, actx = null, lastUnit = '';
+const $ = id => document.getElementById(id);
+const rand = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+const pick = arr => arr[rand(0, arr.length-1)];
+const shuffle = arr => { for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; };
+// Korean particles: does the number's last spoken syllable have a final consonant?
+const hasBatchim = n => { const d = n % 10; return d === 0 || [1,3,6,7,8].includes(d); };
+const eul = n => n + (hasBatchim(n) ? '을' : '를');
+const ga = n => n + (hasBatchim(n) ? '이' : '가');
+const eun = n => (hasBatchim(n) ? '은' : '는');
+const euro = n => { const d = n % 10; return n + ((d === 3 || d === 6 || d === 0) ? '으로' : '로'); };
+const wa = n => n + (hasBatchim(n) ? '과' : '와');
+const fr = (n,d) => `<span class="fr"><span>${n}</span><span>${d}</span></span>`;
+const mixed = (w,n,d) => `<span class="mx">${w}${fr(n,d)}</span>`;
+const BLANK = '<span class="ans">?</span>';
+// only move keyboard focus around on computers; on phones it looks like a preselected answer
+const finePointer = () => { try{ return matchMedia('(pointer: fine)').matches; }catch(e){ return true; } };
+
+/* =========================================================
+   3학년 수학 문제 만들기
+   ========================================================= */
+// turn {ans, wrongs} into 4 shuffled choices
+function finish(o){
+  const ans = String(o.ans); o.ans = ans;
+  const set = new Set([ans]);
+  for(const w of shuffle((o.wrongs || []).map(String))){
+    if(set.size >= 4) break;
+    if(w === ans || /NaN|undefined|-\d|^-/.test(w) || /^0(?!\.)/.test(w.replace(/<[^>]+>/g,''))) continue;
+    set.add(w);
+  }
+  o.choices = shuffle([...set]); delete o.wrongs;
+  return o;
+}
+const strip = s => String(s).replace(/<[^>]+>/g,'');
+
+/* ---- 덧셈과 뺄셈 ---- */
+function carries(a,b){ let c=0,k=0; while(a||b){ const s=a%10+b%10+c; c=s>=10?1:0; k+=c; a=Math.floor(a/10); b=Math.floor(b/10);} return k; }
+function borrows(a,b){ let br=0,k=0; while(a){ const d=a%10-b%10-br; br=d<0?1:0; k+=br; a=Math.floor(a/10); b=Math.floor(b/10);} return k; }
+function noCarrySum(a,b){ let r=0,p=1; while(a>=10||b>=10){ r+=((a%10+b%10)%10)*p; p*=10; a=Math.floor(a/10); b=Math.floor(b/10);} return r+(a+b)*p; }
+function noBorrowDiff(a,b){ let r=0,p=1; while(a||b){ r+=Math.abs(a%10-b%10)*p; p*=10; a=Math.floor(a/10); b=Math.floor(b/10);} return r; }
+const d3 = n => [Math.floor(n/100), Math.floor(n/10)%10, n%10];
+const ADDW = [
+  {t:(a,b)=>`도서관에 동화책이 ${a}권, 위인전이 ${b}권 있어요. 책은 모두 몇 권일까요?`, u:'권'},
+  {t:(a,b)=>`판다가 어제 줄넘기를 ${a}번, 오늘 ${b}번 했어요. 모두 몇 번 했을까요?`, u:'번'}
+];
+const SUBW = [
+  {t:(a,b)=>`색종이가 ${a}장 있었는데 ${b}장을 썼어요. 남은 색종이는 몇 장일까요?`, u:'장'},
+  {t:(a,b)=>`판다가 대나무를 ${a}개 모아서 ${b}개를 먹었어요. 남은 대나무는 몇 개일까요?`, u:'개'}
+];
+function genAdd(lv){
+  const sub = Math.random() < .5;
+  let a, b, ans, wr, expl;
+  if(!sub){
+    const need = lv === 1 ? [0,1] : lv === 2 ? [1,2] : [2,3];
+    do { a = rand(105,789); b = rand(105,789); } while((lv === 1 ? a+b > 999 : a+b > 1500) || !need.includes(carries(a,b)));
+    ans = a + b;
+    wr = [noCarrySum(a,b), ans+10, ans-10, ans+100, ans-100, ans+1];
+    const [ah,at,ao] = d3(a), [bh,bt,bo] = d3(b);
+    expl = `자리끼리 더해요: ${ah*100}+${bh*100}=${(ah+bh)*100}, ${at*10}+${bt*10}=${(at+bt)*10}, ${ao}+${bo}=${ao+bo}<br>→ ${(ah+bh)*100} + ${(at+bt)*10} + ${ao+bo} = ${ans}`;
+  } else {
+    const need = lv === 1 ? [0,1] : lv === 2 ? [1] : [2];
+    do { a = rand(300,999); b = rand(105, a-50); } while(!need.includes(borrows(a,b)));
+    ans = a - b;
+    wr = [noBorrowDiff(a,b), ans+10, ans-10, ans+100, ans-100, ans+1];
+    expl = `일의 자리부터 빼고, 뺄 수 없으면 윗자리에서 10을 받아내려요.<br>확인: ${ans} + ${b} = ${a}`;
+  }
+  const op = sub ? '−' : '+';
+  if(Math.random() < .35){
+    const t = pick(sub ? SUBW : ADDW);
+    return finish({text:t.t(a,b), ans:ans+t.u, wrongs:wr.map(n => n+t.u), explain:`${a} ${op} ${b} = ${ans}<br>${expl}`});
+  }
+  return finish({expr:`${a} ${op} ${b} = ${BLANK}`, ans, wrongs:wr, explain:expl});
+}
+
+/* ---- 곱셈 ---- */
+const MLEVELS = [
+  () => { const b = rand(2,4); if(Math.random() < .4) return [rand(1,9)*10, rand(2,9)]; const m = Math.floor(9/b); return [rand(1,m)*10 + rand(1,m), b]; },
+  () => { let a,b; do { a = rand(12,98); b = rand(2,9); } while((a%10)*b < 10); return [a,b]; },
+  () => [rand(101,499), rand(2,6)],
+  () => Math.random() < .5 ? [rand(1,9)*10, rand(2,9)*10] : [rand(11,49), rand(2,9)*10],
+  () => [rand(11,59), rand(11,29)]
+];
+const MUL_LV = {1:[0,1], 2:[1,2,3], 3:[2,3,4]};
+function forgotCarry(a,b){ const ds = String(a).split('').reverse().map(Number); return ds.reduce((s,d,i) => s + (i === ds.length-1 ? d*b : (d*b)%10) * 10**i, 0); }
+function mulExplain(a,b){
+  const ans = a*b;
+  if(b < 10){
+    const ds = String(a).split('').map(Number), L = ds.length;
+    const parts = ds.map((d,i) => d * 10**(L-1-i)).filter(p => p > 0);
+    if(parts.length === 1){ const z = L-1, lead = a / 10**z; return `${lead}×${b}=${lead*b}에 0을 ${z}개 붙이면 ${ans}`; }
+    return `${parts.map(p => p+'×'+b).join(' + ')} = ${parts.map(p => p*b).join(' + ')} = ${ans}`;
+  }
+  const t = Math.floor(b/10), o = b % 10;
+  if(o === 0 && a % 10 === 0) return `${a/10}×${t}=${a/10*t}에 0을 2개 붙이면 ${ans}`;
+  if(o === 0) return `${a}×${t}=${a*t}에 0을 붙이면 ${ans}`;
+  return `${a}×${t*10} + ${a}×${o} = ${a*t*10} + ${a*o} = ${ans}`;
+}
+function mulWrongs(a,b){
+  const ans = a*b, out = [];
+  if(b < 10) out.push(forgotCarry(a,b)); else if(b % 10) out.push(a*Math.floor(b/10) + a*(b%10));
+  out.push(ans+10, ans-10, ans+20, ans+a, ans-a);
+  if(ans >= 100) out.push(ans+100, ans-100);
+  return out;
+}
+const MULW = [
+  {t:(a,b)=>`한 상자에 귤이 ${a}개씩 들어 있어요. ${b}상자에 든 귤은 모두 몇 개일까요?`, u:'개'},
+  {t:(a,b)=>`판다가 하루에 대나무를 ${a}개씩 먹어요. ${b}일 동안 먹는 대나무는 모두 몇 개일까요?`, u:'개'},
+  {t:(a,b)=>`색종이가 한 묶음에 ${a}장씩 있어요. ${b}묶음에는 모두 몇 장이 있을까요?`, u:'장'}
+];
+function genMul(lv){
+  const [a,b] = MLEVELS[pick(MUL_LV[lv])](); const ans = a*b, r = Math.random();
+  if(r < .2 && b < 10 && a < 100){
+    return finish({expr:`${BLANK} × ${b} = ${ans}`, ans:a, wrongs:[a+1,a-1,a+10,a-10,a+2,ans-b], explain:`□ × ${b} = ${ans}이면 □ = ${ans} ÷ ${b} = ${a}<br>확인: ${mulExplain(a,b)}`});
+  }
+  if(r < .45){
+    const t = pick(MULW);
+    return finish({text:t.t(a,b), ans:ans+t.u, wrongs:mulWrongs(a,b).map(n => n+t.u), explain:`${a} × ${b} = ${ans}<br>${mulExplain(a,b)}`});
+  }
+  return finish({expr:`${a} × ${b} = ${BLANK}`, ans, wrongs:mulWrongs(a,b), explain:mulExplain(a,b)});
+}
+
+/* ---- 나눗셈 ---- */
+function genDiv(lv){
+  const mode = lv === 1 ? 'basic' : lv === 2 ? pick(['big','rem','basic']) : pick(['bigrem','three','rem']);
+  let d, q, r = 0;
+  if(mode === 'basic'){ d = rand(2,9); q = rand(2,9); }
+  else if(mode === 'big'){ d = rand(2,4); q = rand(11, Math.floor(99/d)); }
+  else if(mode === 'rem'){ d = rand(3,9); q = rand(2,9); r = rand(1,d-1); }
+  else if(mode === 'bigrem'){ d = rand(2,6); r = rand(1,d-1); q = rand(11, Math.floor((99-r)/d)); }
+  else { d = rand(2,6); q = rand(Math.ceil(100/d), Math.floor(999/d)); }
+  const a = d*q + r, word = Math.random() < .35;
+  if(!r){
+    const expl = `${d} × ${q} = ${a}이니까 ${a} ÷ ${d} = ${q}`;
+    if(word){
+      return finish({text:`사탕 ${a}개를 ${d}명에게 똑같이 나누어 주려고 해요. 한 명에게 몇 개씩 줄 수 있을까요?`, ans:q+'개', wrongs:[q+1,q-1,q+2,q+10,q-10,d].map(n => n+'개'), explain:expl});
+    }
+    return finish({expr:`${a} ÷ ${d} = ${BLANK}`, ans:q, wrongs:[q+1,q-1,q+2,q+10,q-10,d], explain:expl});
+  }
+  const pairs = [[q,r+1],[q+1,r],[q-1,r+d],[q,d-r],[q-1,r],[q+1,r+1]].filter(([x,y]) => !(x === q && y === r) && y >= 0 && x > 0);
+  const expl = `${d} × ${q} = ${d*q}, ${a} − ${d*q} = ${r}<br>나머지는 나누는 수 ${d}보다 작아야 해요. 확인: ${d} × ${q} + ${r} = ${a}`;
+  if(word){
+    const f = (x,y) => `${x}주머니, ${y}개 남아요`;
+    return finish({text:`구슬 ${a}개를 한 주머니에 ${d}개씩 담으면 몇 주머니가 되고, 몇 개가 남을까요?`, ans:f(q,r), wrongs:pairs.map(([x,y]) => f(x,y)), explain:expl});
+  }
+  const f = (x,y) => `몫 ${x}, 나머지 ${y}`;
+  return finish({expr:`${a} ÷ ${d} = ${BLANK}`, ans:f(q,r), ansShow:`${q} … ${r}`, wrongs:pairs.map(([x,y]) => f(x,y)), explain:expl});
+}
+
+/* ---- 평면도형 ---- */
+function lineFig(t){
+  const x1 = t === 'line' ? 22 : 44, x2 = t === 'seg' ? 196 : 218;
+  let s = `<svg class="fig" viewBox="0 0 240 86" aria-hidden="true"><line x1="${x1}" y1="38" x2="${x2}" y2="38" stroke="#1f2a22" stroke-width="3"/>`;
+  if(t === 'line'){ s += '<path d="M10 38l14-8v16z" fill="#1f2a22"/><circle cx="80" cy="38" r="5.5" fill="#1f2a22"/><circle cx="160" cy="38" r="5.5" fill="#1f2a22"/><text x="80" y="70" text-anchor="middle">ㄱ</text><text x="160" y="70" text-anchor="middle">ㄴ</text>'; }
+  else { s += '<circle cx="44" cy="38" r="5.5" fill="#1f2a22"/><text x="44" y="70" text-anchor="middle">ㄱ</text>'; }
+  if(t === 'seg') s += '<circle cx="196" cy="38" r="5.5" fill="#1f2a22"/><text x="196" y="70" text-anchor="middle">ㄴ</text>';
+  if(t === 'ray') s += '<circle cx="130" cy="38" r="5.5" fill="#1f2a22"/><text x="130" y="70" text-anchor="middle">ㄴ</text>';
+  if(t !== 'seg') s += '<path d="M230 38l-14-8v16z" fill="#1f2a22"/>';
+  return s + '</svg>';
+}
+function shapeFig(k){
+  const st = 'fill="#d3ebc3" stroke="#1f2a22" stroke-width="3" stroke-linejoin="round"';
+  const mark = (x,y,dx,dy) => `<path d="M${x+dx} ${y}v${dy}h${-dx}" fill="none" stroke="#1f2a22" stroke-width="2"/>`;
+  if(k === 'rtri') return `<svg class="fig" viewBox="0 0 240 120" aria-hidden="true"><path d="M60 14V106H190Z" ${st}/>${mark(60,106,14,-14)}</svg>`;
+  if(k === 'rect') return `<svg class="fig" viewBox="0 0 240 120" aria-hidden="true"><rect x="30" y="20" width="180" height="80" ${st}/>${mark(30,100,12,-12)}<path d="M198 20v12h12M30 32h12V20M198 100V88h12" fill="none" stroke="#1f2a22" stroke-width="2"/></svg>`;
+  return `<svg class="fig" viewBox="0 0 240 120" aria-hidden="true"><rect x="75" y="15" width="90" height="90" ${st}/>${mark(75,105,12,-12)}<path d="M153 15v12h12M75 27h12V15M153 105V93h12" fill="none" stroke="#1f2a22" stroke-width="2"/><path d="M116 11v8M124 11v8M116 101v8M124 101v8M71 56h8M71 64h8M161 56h8M161 64h8" stroke="#1f2a22" stroke-width="2"/></svg>`;
+}
+const SHAPE_BANK = [
+  {lv:1, fig:() => lineFig('seg'), text:'두 점 ㄱ, ㄴ을 곧게 이은 이 선의 이름은 무엇일까요?', ans:'선분 ㄱㄴ', wrongs:['반직선 ㄱㄴ','직선 ㄱㄴ','곡선 ㄱㄴ'], explain:'두 점을 곧게 이은 선을 선분이라고 해요. 양쪽 끝이 있어요.'},
+  {lv:1, fig:() => lineFig('ray'), text:'점 ㄱ에서 시작해서 점 ㄴ을 지나 끝없이 늘인 이 선의 이름은?', ans:'반직선 ㄱㄴ', wrongs:['선분 ㄱㄴ','직선 ㄱㄴ','반직선 ㄴㄱ'], explain:'한 점에서 시작해서 한쪽으로 끝없이 늘인 곧은 선은 반직선이에요. 시작하는 점을 먼저 읽어요.'},
+  {lv:1, fig:() => lineFig('line'), text:'양쪽으로 끝없이 늘인 이 곧은 선의 이름은 무엇일까요?', ans:'직선 ㄱㄴ', wrongs:['선분 ㄱㄴ','반직선 ㄱㄴ','곡선 ㄱㄴ'], explain:'선분을 양쪽으로 끝없이 늘인 곧은 선을 직선이라고 해요.'},
+  {lv:1, fig:() => shapeFig('rtri'), text:'이 도형의 이름은 무엇일까요?', ans:'직각삼각형', wrongs:['직사각형','정사각형','원'], explain:'한 각이 직각인 삼각형을 직각삼각형이라고 해요.'},
+  {lv:1, fig:() => shapeFig('rect'), text:'네 각이 모두 직각인 이 도형의 이름은?', ans:'직사각형', wrongs:['직각삼각형','삼각형','원'], explain:'네 각이 모두 직각인 사각형을 직사각형이라고 해요.'},
+  {lv:1, fig:() => shapeFig('square'), text:'네 각이 모두 직각이고 네 변의 길이가 모두 같은 이 도형은?', ans:'정사각형', wrongs:['직각삼각형','삼각형','원'], explain:'네 각이 모두 직각이고 네 변의 길이가 모두 같은 사각형은 정사각형이에요.'},
+  {lv:2, text:'종이를 반듯하게 두 번 접었을 때 생기는 각을 무엇이라고 할까요?', ans:'직각', wrongs:['꼭짓점','변','반직선'], explain:'종이를 반듯하게 두 번 접으면 생기는 각이 직각이에요.'},
+  {lv:2, text:'각에서 두 반직선이 만나는 점을 무엇이라고 할까요?', ans:'꼭짓점', wrongs:['변','직각','선분'], explain:'각을 이루는 두 반직선이 만나는 점은 꼭짓점, 두 반직선은 변이에요.'},
+  {lv:2, text:'각을 이루는 두 반직선을 무엇이라고 할까요?', ans:'변', wrongs:['꼭짓점','직선','직각'], explain:'각을 이루는 두 반직선을 변이라고 해요.'},
+  {lv:2, fig:() => shapeFig('rect'), text:'직사각형에는 직각이 모두 몇 개 있을까요?', ans:'4개', wrongs:['1개','2개','3개'], explain:'직사각형은 네 각이 모두 직각이니까 4개예요.'},
+  {lv:2, fig:() => shapeFig('rtri'), text:'직각삼각형에는 직각이 몇 개 있을까요?', ans:'1개', wrongs:['2개','3개','4개'], explain:'직각삼각형은 한 각만 직각이에요.'},
+  {lv:2, text:'정사각형에 대한 설명으로 옳은 것은 무엇일까요?', ans:'네 변의 길이가 모두 같아요', wrongs:['직각이 2개예요','변이 3개예요','꼭짓점이 5개예요'], explain:'정사각형은 네 각이 모두 직각이고 네 변의 길이가 모두 같아요.'},
+  {lv:2, text:'직사각형과 정사각형에 대한 설명으로 옳은 것은?', ans:'정사각형은 직사각형이라고 할 수 있어요', wrongs:['직사각형은 모두 정사각형이에요','정사각형에는 직각이 없어요','직사각형은 변이 3개예요'], explain:'정사각형은 네 각이 모두 직각이니까 직사각형이라고 할 수 있어요. 하지만 직사각형이 모두 정사각형은 아니에요.'}
+];
+function genShape(lv){
+  if(lv >= 2 && Math.random() < (lv === 3 ? .6 : .25)){
+    if(Math.random() < .5){
+      const s = rand(3,15);
+      return finish({fig:shapeFig('square'), text:`한 변이 ${s}cm인 정사각형이에요. 네 변의 길이를 모두 더하면 몇 cm일까요?`, ans:4*s+'cm', wrongs:[2*s,3*s,s+4,4*s+4,4*s-4].map(n => n+'cm'), explain:`정사각형은 네 변의 길이가 모두 같아요.<br>${s} × 4 = ${4*s}cm`});
+    }
+    let w, h; do { w = rand(5,18); h = rand(3,12); } while(w === h);
+    return finish({fig:shapeFig('rect'), text:`가로 ${w}cm, 세로 ${h}cm인 직사각형이에요. 네 변의 길이를 모두 더하면 몇 cm일까요?`, ans:2*(w+h)+'cm', wrongs:[w+h, w*h, 2*w+h, w+2*h, 2*(w+h)+2].map(n => n+'cm'), explain:`직사각형은 마주 보는 변의 길이가 같아요.<br>${w} + ${h} + ${w} + ${h} = ${2*(w+h)}cm`});
+  }
+  const pool = SHAPE_BANK.filter(it => it.lv <= lv);
+  const it = pick(pool);
+  return finish({text:it.text, fig:it.fig ? it.fig() : '', ans:it.ans, wrongs:it.wrongs.slice(), explain:it.explain});
+}
+
+/* ---- 원 ---- */
+function circleFig(kind, label){
+  let s = '<svg class="fig" viewBox="0 0 240 130" aria-hidden="true"><circle cx="120" cy="64" r="54" fill="#d3ebc3" stroke="#1f2a22" stroke-width="3"/>';
+  if(kind === 'r') s += `<line x1="120" y1="64" x2="174" y2="64" stroke="#d9534f" stroke-width="4"/><text x="147" y="56" text-anchor="middle">${label}</text>`;
+  if(kind === 'd') s += `<line x1="66" y1="64" x2="174" y2="64" stroke="#d9534f" stroke-width="4"/><text x="120" y="56" text-anchor="middle">${label}</text>`;
+  s += '<circle cx="120" cy="64" r="5" fill="#1f2a22"/>';
+  if(kind === 'c') s += '<text x="120" y="88" text-anchor="middle">ㅇ</text>';
+  return s + '</svg>';
+}
+function genCircle(lv){
+  if(lv === 1){
+    const it = pick([
+      {fig:circleFig('c'), text:'원을 그릴 때 컴퍼스의 침을 꽂은 점 ㅇ을 무엇이라고 할까요?', ans:'원의 중심', wrongs:['반지름','지름','꼭짓점'], explain:'원의 한가운데에 있는 점을 원의 중심이라고 해요.'},
+      {fig:circleFig('r','?'), text:'원의 중심과 원 위의 한 점을 이은 빨간 선분을 무엇이라고 할까요?', ans:'반지름', wrongs:['지름','원의 중심','직선'], explain:'원의 중심과 원 위의 한 점을 이은 선분은 반지름이에요.'},
+      {fig:circleFig('d','?'), text:'원의 중심을 지나도록 원 위의 두 점을 이은 빨간 선분을 무엇이라고 할까요?', ans:'지름', wrongs:['반지름','원의 중심','반직선'], explain:'원의 중심을 지나고 원 위의 두 점을 이은 선분은 지름이에요.'},
+      {text:'한 원에서 지름은 반지름의 몇 배일까요?', ans:'2배', wrongs:['1배','3배','4배'], explain:'지름은 반지름 2개를 이은 것과 같아서 반지름의 2배예요.'}
+    ]);
+    return finish({...it, wrongs:it.wrongs.slice()});
+  }
+  if(lv === 2){
+    const r = rand(2,15);
+    if(Math.random() < .5) return finish({fig:circleFig('r', r+'cm'), text:`반지름이 ${r}cm인 원이에요. 이 원의 지름은 몇 cm일까요?`, ans:2*r+'cm', wrongs:[r, r+2, 3*r, 4*r, Math.max(1,Math.floor(r/2))].map(n => n+'cm'), explain:`지름은 반지름의 2배예요.<br>${r} × 2 = ${2*r}cm`});
+    return finish({fig:circleFig('d', 2*r+'cm'), text:`지름이 ${2*r}cm인 원이에요. 이 원의 반지름은 몇 cm일까요?`, ans:r+'cm', wrongs:[2*r, 4*r, r+1, r-1, r+2].map(n => n+'cm'), explain:`반지름은 지름의 반이에요.<br>${2*r} ÷ 2 = ${r}cm`});
+  }
+  if(Math.random() < .5){
+    const r = rand(2,8), n = rand(3,5);
+    return finish({text:`반지름이 ${r}cm인 원 ${n}개를 겹치지 않게 한 줄로 맞닿게 놓았어요. 왼쪽 끝에서 오른쪽 끝까지의 길이는 몇 cm일까요?`, ans:2*r*n+'cm', wrongs:[r*n, 2*r*(n-1), 2*r+n, r*n+r, 4*r*n].map(n => n+'cm'), explain:`원 한 개의 지름은 ${r} × 2 = ${2*r}cm<br>지름 ${n}개만큼이니까 ${2*r} × ${n} = ${2*r*n}cm`});
+  }
+  const d = rand(3,12)*2;
+  return finish({text:`지름이 ${d}cm인 원이 꼭 맞게 들어가는 정사각형이 있어요. 정사각형의 한 변은 몇 cm일까요?`, ans:d+'cm', wrongs:[d/2, 2*d, 4*d, d+2].map(n => n+'cm'), explain:`원이 꼭 맞게 들어가면 정사각형의 한 변과 원의 지름이 같아요. → ${d}cm`});
+}
+
+/* ---- 길이와 시간 ---- */
+function genLen(lv){
+  const t = lv === 1 ? pick(['cm2mm','mm2cm','km2m']) : lv === 2 ? pick(['m2km','min2s','s2min','km2m']) : pick(['tadd','tsub','tafter']);
+  if(t === 'cm2mm'){ const c = rand(2,15), m = rand(1,9), ans = c*10+m;
+    return finish({expr:`${c}cm ${m}mm = ${BLANK}mm`, ans, wrongs:[c*100+m, c+m, ans+10, ans-10, c*10], explain:`1cm = 10mm이니까 ${c}cm = ${c*10}mm<br>${c*10}mm + ${m}mm = ${ans}mm`}); }
+  if(t === 'mm2cm'){ let n; do { n = rand(21,199); } while(n % 10 === 0); const c = Math.floor(n/10), m = n % 10;
+    return finish({expr:`${n}mm = ${BLANK}`, ans:`${c}cm ${m}mm`, wrongs:[`${Math.floor(n/100)}cm ${n%100}mm`, `${m}cm ${c}mm`, `${c+1}cm ${m}mm`, `${c}cm ${m+1}mm`, `${c-1}cm ${m}mm`], explain:`10mm = 1cm이에요. ${n}mm = ${c*10}mm + ${m}mm = ${c}cm ${m}mm`}); }
+  if(t === 'km2m'){ const k = rand(1,9), m = pick([rand(1,9)*100, rand(1,9)*100 + rand(1,9)*10, rand(1,9)*10]), ans = k*1000+m;
+    return finish({expr:`${k}km ${m}m = ${BLANK}m`, ans, wrongs:[Number(`${k}${m}`), k*100+m, k*1000+m*10, ans+1000, ans-100], explain:`1km = 1000m이니까 ${k}km = ${k*1000}m<br>${k*1000}m + ${m}m = ${ans}m`}); }
+  if(t === 'm2km'){ const k = rand(1,9), m = rand(1,99)*10, n = k*1000+m;
+    return finish({expr:`${n}m = ${BLANK}`, ans:`${k}km ${m}m`, wrongs:[`${Math.floor(n/100)}km ${n%100}m`, `${k+1}km ${m}m`, `${k}km ${1000-m}m`, `${k-1}km ${m}m`, `${k}km ${m+100}m`], explain:`1000m = 1km예요. ${n}m = ${k*1000}m + ${m}m = ${k}km ${m}m`}); }
+  if(t === 'min2s'){ const mm = rand(1,5), s = rand(5,55), ans = mm*60+s;
+    return finish({expr:`${mm}분 ${s}초 = ${BLANK}초`, ans, wrongs:[mm*100+s, mm*10+s, ans+60, ans-60, ans+10], explain:`1분 = 60초이니까 ${mm}분 = ${mm*60}초<br>${mm*60}초 + ${s}초 = ${ans}초`}); }
+  if(t === 's2min'){ let n; do { n = rand(70,330); } while(n % 60 === 0); const mm = Math.floor(n/60), s = n % 60;
+    return finish({expr:`${n}초 = ${BLANK}`, ans:`${mm}분 ${s}초`, wrongs:[`${Math.floor(n/100)}분 ${n%100}초`, `${mm+1}분 ${s}초`, `${mm}분 ${s+10}초`, `${mm-1}분 ${s+60}초`], explain:`60초 = 1분이에요. ${n}초 = ${mm*60}초 + ${s}초 = ${mm}분 ${s}초`}); }
+  if(t === 'tadd'){ const h1 = rand(1,4), h2 = rand(1,3), m1 = rand(5,11)*5, m2 = rand(Math.max(1, 13 - m1/5), 11)*5, sm = m1+m2;
+    const ans = `${h1+h2+1}시간 ${sm-60}분`;
+    return finish({expr:`${h1}시간 ${m1}분 + ${h2}시간 ${m2}분 = ${BLANK}`, ans, wrongs:[`${h1+h2}시간 ${sm}분`, `${h1+h2}시간 ${sm-60}분`, `${h1+h2+1}시간 ${sm-40}분`, `${h1+h2+2}시간 ${sm-60}분`], explain:`분끼리 더하면 ${m1}분 + ${m2}분 = ${sm}분 = 1시간 ${sm-60}분<br>시간끼리 더하면 ${h1+h2}시간 → 모두 ${ans}`}); }
+  if(t === 'tsub'){ const H = rand(4,11), M = rand(1,7)*5, h2 = rand(1,H-2), m2 = rand(M/5+1, 11)*5;
+    const ans = `${H-h2-1}시 ${M+60-m2}분`;
+    return finish({expr:`${H}시 ${M}분 − ${h2}시간 ${m2}분 = ${BLANK}`, ans, wrongs:[`${H-h2}시 ${m2-M}분`, `${H-h2-1}시 ${M+100-m2}분`, `${H-h2}시 ${M+60-m2}분`, `${H-h2-1}시 ${M+70-m2}분`], explain:`${M}분에서 ${m2}분을 뺄 수 없으니 1시간을 60분으로 바꿔요.<br>${H-1}시 ${M+60}분 − ${h2}시간 ${m2}분 = ${ans}`}); }
+  const H = rand(1,8), h2 = rand(1,2), M = rand(5,11)*5, m2 = rand(Math.max(1, 13 - M/5), 11)*5, sm = M+m2;
+  const ans = `${H+h2+1}시 ${sm-60}분`;
+  return finish({text:`판다가 ${H}시 ${M}분에 출발해서 ${h2}시간 ${m2}분 동안 걸었어요. 도착한 시각은 몇 시 몇 분일까요?`, ans, wrongs:[`${H+h2}시 ${sm}분`, `${H+h2}시 ${sm-60}분`, `${H+h2+1}시 ${sm-40}분`, `${H+h2+2}시 ${sm-60}분`], explain:`${H}시 ${M}분 + ${h2}시간 ${m2}분<br>분끼리: ${sm}분 = 1시간 ${sm-60}분, 시끼리: ${H+h2}시 → ${ans}`});
+}
+
+/* ---- 분수 ---- */
+function barFig(n,k){
+  const W = 220, w = W/n;
+  let s = `<svg class="fig" viewBox="0 0 240 64" aria-hidden="true">`;
+  for(let i=0;i<n;i++) s += `<rect x="${10+i*w}" y="10" width="${w}" height="44" fill="${i<k ? '#f2b51d' : '#ffffff'}" stroke="#1f2a22" stroke-width="2.5"/>`;
+  return s + '</svg>';
+}
+function genFrac(lv){
+  const t = lv === 1 ? pick(['pic','pic','unitMax','unitMin']) : lv === 2 ? pick(['sameMax','of','ofWord']) : pick(['toMixed','toImproper','proper']);
+  if(t === 'pic'){ const n = pick([2,3,4,5,6,8,10]), k = rand(1,n-1);
+    return finish({fig:barFig(n,k), text:'색칠한 부분은 전체의 얼마일까요?', ans:fr(k,n), wrongs:[fr(n-k,n), fr(n,k), fr(k,n+1), fr(k+1,n), fr(k,n-k)], explain:`전체를 똑같이 ${euro(n)} 나눈 것 중의 ${k}만큼 → ${fr(k,n)}`}); }
+  if(t === 'unitMax' || t === 'unitMin'){ const ds = shuffle([2,3,4,5,6,7,8,9,10]).slice(0,4), big = t === 'unitMax';
+    const target = big ? Math.min(...ds) : Math.max(...ds);
+    return finish({text:`가장 ${big ? '큰' : '작은'} 분수는 무엇일까요?`, ans:fr(1,target), wrongs:ds.filter(d => d !== target).map(d => fr(1,d)), explain:'분자가 1인 단위분수는 분모가 작을수록 커요. 똑같이 나눈 조각 수가 적을수록 한 조각이 크니까요.'}); }
+  if(t === 'sameMax'){ const n = rand(5,12), ks = shuffle([...Array(n-1).keys()].map(i => i+1)).slice(0,4), mx = Math.max(...ks);
+    return finish({text:'가장 큰 분수는 무엇일까요?', ans:fr(mx,n), wrongs:ks.filter(k => k !== mx).map(k => fr(k,n)), explain:'분모가 같으면 분자가 클수록 더 큰 분수예요.'}); }
+  if(t === 'of' || t === 'ofWord'){ const n = pick([2,3,4,5,6]), m = rand(2,6), N = n*m, k = rand(1,n-1), ans = k*m;
+    const expl = `${eul(N)} 똑같이 ${n}묶음으로 나누면 한 묶음은 ${m}<br>${k}묶음은 ${m} × ${k} = ${ans}`;
+    const wr = [m, N-ans, k*n, m+k, ans+m, ans-1];
+    if(t === 'ofWord') return finish({text:`사탕 ${N}개의 ${fr(k,n)}${hasBatchim(k) ? '을' : '를'} 동생에게 주었어요. 동생에게 준 사탕은 몇 개일까요?`, ans:ans+'개', wrongs:wr.map(x => x+'개'), explain:expl});
+    return finish({text:`${N}의 ${fr(k,n)}${eun(k)} 얼마일까요?`, ans, wrongs:wr, explain:expl}); }
+  const d = rand(3,9), w = rand(1,4), n = rand(1,d-1), num = w*d+n;
+  if(t === 'toMixed') return finish({text:`${fr(num,d)}${hasBatchim(num) ? '을' : '를'} 대분수로 나타내면?`, ans:mixed(w,n,d), wrongs:[mixed(w+1,n,d), mixed(w,n+1,d), mixed(w-1,n,d), mixed(w,d-n,d), n !== w && w < d ? mixed(n,w,d) : mixed(w+2,n,d)].filter(x => !/>0<span/.test(x) && !x.startsWith('<span class="mx">0')), explain:`${fr(d,d)} = 1이에요. ${fr(num,d)}에서 1을 ${w}번 만들 수 있고 ${fr(n,d)}${ga(n).slice(String(n).length)} 남아요 → ${mixed(w,n,d)}`});
+  if(t === 'toImproper') return finish({text:`${mixed(w,n,d)}${hasBatchim(n) ? '을' : '를'} 가분수로 나타내면?`, ans:fr(num,d), wrongs:[fr(w+n,d), fr(num+1,d), fr(num-1,d), fr(w*n+d,d), fr(w*d,d)], explain:`${w} = ${fr(w*d,d)}이니까 ${fr(w*d,d)} + ${fr(n,d)} = ${fr(num,d)}`});
+  const p = rand(1,d-1);
+  return finish({text:'다음 중 진분수는 무엇일까요?', ans:fr(p,d), wrongs:[fr(d,d), fr(d+1,d), fr(d+rand(2,5),d), fr(d+6,d)], explain:'분자가 분모보다 작은 분수가 진분수예요. 분자가 분모와 같거나 크면 가분수예요.'});
+}
+
+/* ---- 소수 ---- */
+const dec = x => `${Math.floor(x/10)}.${x%10}`;
+function genDec(lv){
+  const t = lv === 1 ? pick(['tenth','count','mm']) : lv === 2 ? pick(['wk','countBig','cmmm']) : pick(['max','min','max']);
+  if(t === 'tenth'){ const k = rand(1,9);
+    return finish({text:`${fr(k,10)}${hasBatchim(k) ? '을' : '를'} 소수로 나타내면 무엇일까요?`, ans:`0.${k}`, wrongs:[`${k}`, `1.${k}`, `0.${10-k}`, `${k}.1`, `0.${k === 9 ? 8 : k+1}`], explain:`${fr(1,10)} = 0.1이에요. ${fr(k,10)}${eun(k)} 0.1이 ${k}개이니까 0.${k}`}); }
+  if(t === 'count'){ const k = rand(2,9);
+    return finish({text:`0.1이 ${k}개인 수는 무엇일까요?`, ans:`0.${k}`, wrongs:[`${k}`, `${k}.1`, `1.${k}`, `0.${k-1}`], explain:`0.1이 ${k}개이면 0.${k}예요.`}); }
+  if(t === 'mm'){ const k = rand(1,9);
+    return finish({expr:`${k}mm = ${BLANK}cm`, ans:`0.${k}`, wrongs:[`${k}`, `${k}0`, `1.${k}`, `${k}.1`], explain:`1mm = 0.1cm이니까 ${k}mm = 0.${k}cm`}); }
+  if(t === 'wk'){ const w = rand(1,9), k = rand(1,9);
+    return finish({text:`${wa(w)} 0.${k}만큼인 수는 무엇일까요?`, ans:`${w}.${k}`, wrongs:[`${k}.${w}`, `${w+k}`, `${w}${k}`, `${w+1}.${k}`, `${w}.${k === 9 ? 1 : k+1}`], explain:`${wa(w)} 0.${k}만큼은 ${w}.${k}라고 써요.`}); }
+  if(t === 'countBig'){ const w = rand(1,9), k = rand(1,9);
+    return finish({text:`${w}.${k}${eun(k)} 0.1이 몇 개인 수일까요?`, ans:`${w*10+k}개`, wrongs:[`${w+k}개`, `${k}개`, `${w*10+k+10}개`, `${w*100+k}개`], explain:`${w}는 0.1이 ${w*10}개, 0.${k}는 0.1이 ${k}개 → 모두 ${w*10+k}개`}); }
+  if(t === 'cmmm'){ const c = rand(1,12), m = rand(1,9);
+    return finish({expr:`${c}cm ${m}mm = ${BLANK}cm`, ans:`${c}.${m}`, wrongs:[`${c}${m}`, `${m}.${c}`, `${c+1}.${m}`, `${c*10+m}`], explain:`${m}mm = 0.${m}cm이니까 ${c}cm ${m}mm = ${c}.${m}cm`}); }
+  const base = rand(2,8), set = new Set();
+  const digit = () => rand(1,9);
+  set.add(base*10 + digit()); set.add(base*10 + digit());
+  set.add((base+1)*10 + digit()); set.add((base-1)*10 + digit());
+  while(set.size < 4) set.add(rand(1,9)*10 + digit());
+  const vals = [...set].slice(0,4), big = t === 'max', target = big ? Math.max(...vals) : Math.min(...vals);
+  return finish({text:`가장 ${big ? '큰' : '작은'} 소수는 무엇일까요?`, ans:dec(target), wrongs:vals.filter(v => v !== target).map(dec), explain:'먼저 자연수 부분을 비교하고, 자연수 부분이 같으면 소수 첫째 자리를 비교해요.'});
+}
+
+/* ---- 들이와 무게 ---- */
+function genVol(lv){
+  const [B, s] = pick([['L','mL'],['kg','g']]);
+  const name = B === 'L' ? '들이' : '무게';
+  if(lv === 1){
+    const a = rand(1,9), m = rand(1,9)*100, n = a*1000+m;
+    if(Math.random() < .5) return finish({expr:`${a}${B} ${m}${s} = ${BLANK}${s}`, ans:n, wrongs:[a*100+m, a+m, n+100, n-100, n+1000], explain:`1${B} = 1000${s}이니까 ${a}${B} = ${a*1000}${s}<br>${a*1000}${s} + ${m}${s} = ${n}${s}`});
+    return finish({expr:`${n}${s} = ${BLANK}`, ans:`${a}${B} ${m}${s}`, wrongs:[`${Math.floor(n/100)}${B} ${n%100}${s}`, `${a+1}${B} ${m}${s}`, `${a}${B} ${m/100}${s}`, `${a}${B} ${1000-m}${s}`].filter(x => !x.includes(` 0${s}`)), explain:`1000${s} = 1${B}이에요. ${n}${s} = ${a*1000}${s} + ${m}${s} = ${a}${B} ${m}${s}`});
+  }
+  if(lv === 2){
+    if(Math.random() < .3){ const k = rand(2,9);
+      return finish({expr:`${k}t = ${BLANK}kg`, ans:k*1000, wrongs:[k*100, k*10, k*10000], explain:`1t = 1000kg이니까 ${k}t = ${k*1000}kg`}); }
+    const a = rand(2,9), m = rand(1,9)*10, n = a*1000+m;
+    return finish({expr:`${a}${B} ${m}${s} = ${BLANK}${s}`, ans:n, wrongs:[Number(`${a}${m}`), a*100+m, a*1000+m*10, n+10, n+100], explain:`${a}${B} = ${a*1000}${s}이에요. ${a*1000} + ${m} = ${n}이니까 ${n}${s}<br>백의 자리에 0이 들어가는 것에 주의해요.`});
+  }
+  if(Math.random() < .5){
+    const a1 = rand(1,5), a2 = rand(1,4), m1 = rand(3,9)*100, m2 = rand(Math.max(2, 11 - m1/100), 9)*100, sm = m1+m2;
+    const ans = `${a1+a2+1}${B} ${sm-1000}${s}`;
+    return finish({expr:`${a1}${B} ${m1}${s} + ${a2}${B} ${m2}${s} = ${BLANK}`, ans, wrongs:[`${a1+a2}${B} ${sm}${s}`, `${a1+a2}${B} ${sm-1000}${s}`, `${a1+a2+1}${B} ${sm-900}${s}`, `${a1+a2+2}${B} ${sm-1000}${s}`], explain:`${s}끼리 더하면 ${sm}${s} = 1${B} ${sm-1000}${s}<br>${B}끼리 더하면 ${a1+a2}${B} → 모두 ${ans}`});
+  }
+  const A = rand(3,9), M = rand(1,4)*100, b = rand(1,A-2), m = rand(M/100+1, 9)*100;
+  const ans = `${A-b-1}${B} ${M+1000-m}${s}`;
+  return finish({expr:`${A}${B} ${M}${s} − ${b}${B} ${m}${s} = ${BLANK}`, ans, wrongs:[`${A-b}${B} ${m-M}${s}`, `${A-b}${B} ${M+1000-m}${s}`, `${A-b-1}${B} ${m-M}${s}`, `${A-b-1}${B} ${M+1100-m}${s}`], explain:`${M}${s}에서 ${m}${s}${s === 'mL' ? '를' : '을'} 뺄 수 없으니 1${B}${B === 'L' ? '를' : '을'} 1000${s}로 바꿔요.<br>${A-1}${B} ${M+1000}${s} − ${b}${B} ${m}${s} = ${ans}`});
+}
+
+/* ---- 그림그래프 ---- */
+function graphFig(rows, big, small){
+  const ico = (c,n) => Array.from({length:n}, () => `<i class="${c}"></i>`).join('');
+  return `<div class="pg">${rows.map(([lab,b,s]) => `<div class="pg-row"><span class="pg-lab">${lab}</span><span class="pg-icons">${ico('cb',b)}${ico('cs',s)}</span></div>`).join('')}<div class="pg-key"><i class="cb"></i> ${big}개 <i class="cs"></i> ${small}개</div></div>`;
+}
+function genGraph(lv){
+  const [big, small] = lv === 3 ? [100,10] : [10,1];
+  const mode = lv === 1 ? 'read' : lv === 2 ? pick(['read','draw']) : pick(['read','draw','total']);
+  const B = rand(1,5), s = rand(1, lv === 1 ? 5 : 8), N = B*big + s*small;
+  if(mode === 'read') return finish({fig:graphFig([['판다',B,s]], big, small), text:`판다가 모은 동전을 그림그래프로 나타냈어요. 판다가 모은 동전은 몇 개일까요?`, ans:N+'개', wrongs:[B+s, s*big+B*small, N+big, N-small, N+small].map(x => x+'개'), explain:`큰 동전 ${B}개 → ${B*big}개, 작은 동전 ${s}개 → ${s*small}개<br>${B*big} + ${s*small} = ${N}개`});
+  if(mode === 'draw'){ const f = (x,y) => `큰 동전 ${x}개, 작은 동전 ${y}개`;
+    return finish({text:`동전 ${N}개를 그림그래프로 나타내려고 해요. 큰 동전은 ${big}개, 작은 동전은 ${small}개를 나타낼 때 각각 몇 개씩 그려야 할까요?`, ans:f(B,s), wrongs:[f(s,B), f(B+1,s), f(B,s+1), f(B-1,s), f(B,s-1)], explain:`${N} = ${B*big} + ${s*small}이니까 큰 동전 ${B}개, 작은 동전 ${s}개`}); }
+  const B2 = rand(1,4), s2 = rand(1,8), N2 = B2*big + s2*small;
+  return finish({fig:graphFig([['판다',B,s],['토끼',B2,s2]], big, small), text:'판다와 토끼가 모은 동전을 그림그래프로 나타냈어요. 두 친구가 모은 동전은 모두 몇 개일까요?', ans:(N+N2)+'개', wrongs:[N+N2+big, N+N2-small, B+s+B2+s2, N+N2+small, N].map(x => x+'개'), explain:`판다 ${N}개, 토끼 ${N2}개<br>${N} + ${N2} = ${N+N2}개`});
+}
+
+const UNITS = [
+  {id:'add',    name:'덧셈과 뺄셈', gen:genAdd},
+  {id:'shape',  name:'평면도형',    gen:genShape},
+  {id:'div',    name:'나눗셈',      gen:genDiv},
+  {id:'mul',    name:'곱셈',        gen:genMul},
+  {id:'len',    name:'길이와 시간', gen:genLen},
+  {id:'frac',   name:'분수',        gen:genFrac},
+  {id:'dec',    name:'소수',        gen:genDec},
+  {id:'circle', name:'원',          gen:genCircle},
+  {id:'vol',    name:'들이와 무게', gen:genVol},
+  {id:'graph',  name:'그림그래프',  gen:genGraph}
+];
+const ALL_UNITS = UNITS.map(u => u.id);
+const lvOf = s => s <= 2 ? 1 : s <= 4 ? 2 : 3;
+function makeQuestion(star){
+  const ids = S.units.length ? S.units : ALL_UNITS;
+  const pool = ids.length > 1 ? ids.filter(i => i !== lastUnit) : ids;
+  const id = pick(pool); lastUnit = id;
+  const u = UNITS.find(x => x.id === id);
+  const Q = u.gen(Math.min(3, lvOf(S.stage) + (star ? 1 : 0)));
+  Q.unit = id;
+  return Q;
+}
+
+function defaults(){ return {coins:0, owned:{}, equip:{head:null,face:null,hand:null,neck:null}, stage:1, solved:0, best:0, topStage:1, review:[], units:ALL_UNITS.slice()}; }
+function load(){ try{ const r = localStorage.getItem(KEY); if(r) return Object.assign(defaults(), JSON.parse(r)); }catch(e){} return defaults(); }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+/* ---------- sound ---------- */
+function tone(f, s, d, type='sine', v=.16){
+  if(!sound) return;
+  try{
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const t = actx.currentTime + s, o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t+.01); g.gain.exponentialRampToValueAtTime(.001, t+d);
+    o.connect(g).connect(actx.destination); o.start(t); o.stop(t+d+.02);
+  }catch(e){}
+}
+const sfx = {
+  step(){ tone(330,0,.05,'triangle',.05); },
+  bump(){ tone(140,0,.12,'triangle',.12); },
+  pick(){ tone(1319,0,.07,'square',.05); tone(1760,.06,.1,'square',.05); },
+  open(){ tone(523,0,.08); tone(659,.06,.08); },
+  right(){ tone(784,0,.12); tone(1175,.09,.22); },
+  coin(i){ tone(1568+i*60,0,.07,'square',.04); },
+  wrong(){ tone(220,0,.25,'triangle',.2); tone(180,.12,.3,'triangle',.18); },
+  clear(){ [523,659,784,1047].forEach((f,i) => tone(f,i*.12,.25)); },
+  buy(){ tone(659,0,.1); tone(880,.08,.1); tone(1319,.16,.25); }
+};
+
+/* ---------- stage generation ---------- */
+const idx = (x,y) => y*N + x;
+const blocked = c => c.t === 'rock' || c.t === 'bamboo';
+function reachableCount(cells, sx, sy){
+  const seen = new Set([idx(sx,sy)]), q = [[sx,sy]];
+  while(q.length){
+    const [x,y] = q.shift();
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nx=x+dx, ny=y+dy, k=idx(nx,ny);
+      if(nx<0||ny<0||nx>=N||ny>=N||seen.has(k)||blocked(cells[k])) continue;
+      seen.add(k); q.push([nx,ny]);
+    }
+  }
+  return seen.size;
+}
+function newStage(){
+  const s = S.stage;
+  const nObs = Math.min(9 + s, 16), nBox = Math.min(5 + s, 10), nCoin = 6;
+  const start = {x:0, y:N-1};
+  let cells;
+  for(let tries=0; tries<200; tries++){
+    cells = Array.from({length:N*N}, () => ({t:'grass'}));
+    const free = shuffle([...Array(N*N).keys()].filter(k => k !== idx(start.x,start.y) && k !== idx(1,N-1) && k !== idx(0,N-2)));
+    for(let i=0;i<nObs;i++) cells[free[i]].t = Math.random() < .6 ? 'bamboo' : 'rock';
+    if(reachableCount(cells, start.x, start.y) === cells.filter(c => !blocked(c)).length) break;
+  }
+  const open = shuffle([...Array(N*N).keys()].filter(k => cells[k].t === 'grass' && k !== idx(start.x,start.y)));
+  let p = 0;
+  for(let i=0;i<nBox;i++) cells[open[p++]].t = 'box';
+  cells[open[p++]].t = 'star';
+  for(let i=0;i<nCoin;i++) cells[open[p++]].t = 'coin';
+  G = {cells, pos:{...start}, prev:{...start}, flip:false};
+  renderBoard(); placePanda(true); renderStatus();
+  say(`${s}단계! ? 상자 ${nBox}개와 ★ 별 상자를 모두 열어 봐.`);
+}
+const boxesLeft = () => G.cells.filter(c => c.t === 'box' || c.t === 'star').length;
+
+/* ---------- rendering ---------- */
+function renderCell(k, pop){
+  const el = $('cells').children[k], c = G.cells[k];
+  const x = k % N, y = Math.floor(k / N);
+  el.className = 'cell' + ((x+y)%2 ? ' b' : '') + ' ' + c.t + (pop ? ' pop' : '');
+  el.innerHTML = TILE[c.t] || '';
+}
+function renderBoard(){
+  const box = $('cells'); box.innerHTML = '';
+  for(let k=0;k<N*N;k++){ const d = document.createElement('div'); d.addEventListener('click', () => tapCell(k)); box.appendChild(d); }
+  for(let k=0;k<N*N;k++) renderCell(k);
+}
+function placePanda(instant){
+  const p = $('panda');
+  if(instant){ p.style.transition = 'none'; requestAnimationFrame(() => p.style.transition = ''); }
+  p.style.transform = `translate(${G.pos.x*100}%, ${G.pos.y*100}%)`;
+  $('pandaInner').classList.toggle('flip', G.flip);
+}
+function anim(cls){ const el = $('pandaInner'); el.classList.remove('hop','bump','cheer','shake'); void el.offsetWidth; el.classList.add(cls); }
+let moodT = null;
+function setMood(m){
+  $('eyes-open').classList.toggle('off', m === 'happy');
+  $('eyes-happy').classList.toggle('off', m !== 'happy');
+  $('tear').classList.toggle('off', m !== 'sad');
+  $('mouth-normal').classList.toggle('off', m !== 'normal');
+  $('mouth-happy').classList.toggle('off', m !== 'happy');
+  $('mouth-sad').classList.toggle('off', m !== 'sad');
+  clearTimeout(moodT);
+  if(m !== 'normal') moodT = setTimeout(() => setMood('normal'), 1600);
+}
+function renderPanda(){ ITEMS.forEach(it => $('acc-'+it.id).classList.toggle('off', S.equip[it.slot] !== it.id)); }
+function say(t){ $('msg').textContent = t; }
+function renderCoins(pop){
+  $('coinNum').textContent = S.coins;
+  if(pop){ const p = $('coinPill'); p.classList.remove('pop'); void p.offsetWidth; p.classList.add('pop'); }
+}
+function renderStatus(){
+  $('stageChip').textContent = S.stage + '단계';
+  $('boxChip').textContent = '남은 상자 ' + boxesLeft();
+  const el = $('streak'); el.innerHTML = '';
+  const filled = streak > 0 && streak % 5 === 0 ? 5 : streak % 5;
+  for(let i=0;i<5;i++){ const d = document.createElement('i'); if(i < filled) d.className = 'on'; el.appendChild(d); }
+  $('stSolved').textContent = S.solved; $('stBest').textContent = S.best; $('stStage').textContent = S.topStage;
+}
+function flyCoins(fromEl, n){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const a = fromEl.getBoundingClientRect(), b = $('coinPill').getBoundingClientRect();
+  const x0 = a.left + a.width/2, y0 = a.top + a.height/2, x1 = b.left + 20, y1 = b.top + b.height/2;
+  for(let i=0;i<n;i++) setTimeout(() => {
+    sfx.coin(i);
+    if(reduce) return;
+    const c = document.createElement('span'); c.className = 'flycoin';
+    c.style.left = x0 + 'px'; c.style.top = y0 + 'px';
+    document.body.appendChild(c);
+    const dx = x1-x0, dy = y1-y0;
+    c.animate([{transform:'translate(0,0)'},{transform:`translate(${dx*.5}px,${dy*.5-60}px) scale(1.2)`,offset:.5},{transform:`translate(${dx}px,${dy}px) scale(.6)`}],{duration:650,easing:'ease-in-out'}).onfinish = () => c.remove();
+  }, i*90);
+}
+
+/* ---------- movement ---------- */
+const busy = () => quiz || openSheet || !$('clear').classList.contains('off');
+const canEnter = (x,y) => x>=0 && y>=0 && x<N && y<N && !blocked(G.cells[idx(x,y)]);
+function stepTo(x,y){
+  const dx = x - G.pos.x;
+  if(dx) G.flip = dx < 0;
+  G.prev = {...G.pos}; G.pos = {x,y};
+  placePanda(); anim('hop'); sfx.step();
+  return land();
+}
+function land(){
+  const k = idx(G.pos.x, G.pos.y), c = G.cells[k];
+  if(c.t === 'coin'){
+    c.t = 'grass'; renderCell(k); sfx.pick();
+    S.coins += 2; renderCoins(true); renderShop(); save();
+    say('반짝 동전 2개를 주웠어!');
+    return true;
+  }
+  if(c.t === 'box' || c.t === 'star'){ walkQ = []; setTimeout(() => openQuiz(k), 180); return false; }
+  return true;
+}
+function tryMove(dx,dy){
+  if(busy()) return;
+  const now = performance.now();
+  if(now - lastMove < 120) return;
+  lastMove = now; walkQ = [];
+  const nx = G.pos.x + dx, ny = G.pos.y + dy;
+  if(dx) G.flip = dx < 0;
+  if(!canEnter(nx,ny)){
+    placePanda(); anim('bump'); sfx.bump();
+    if(nx>=0 && ny>=0 && nx<N && ny<N) say(G.cells[idx(nx,ny)].t === 'rock' ? '바위는 넘어갈 수 없어. 돌아가 보자!' : '대나무 숲이 너무 빽빽해. 다른 길로 가자!');
+    return;
+  }
+  stepTo(nx,ny);
+}
+function findPath(tx,ty){
+  const start = idx(G.pos.x,G.pos.y), goal = idx(tx,ty);
+  const from = new Map([[start,-1]]), q = [start];
+  while(q.length){
+    const k = q.shift();
+    if(k === goal) break;
+    const x = k % N, y = Math.floor(k/N);
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nx=x+dx, ny=y+dy, nk=idx(nx,ny);
+      if(!canEnter(nx,ny) || from.has(nk)) continue;
+      const t = G.cells[nk].t;
+      if((t === 'box' || t === 'star') && nk !== goal) continue;
+      from.set(nk,k); q.push(nk);
+    }
+  }
+  if(!from.has(goal)) return null;
+  const path = []; let k = goal;
+  while(k !== start){ path.unshift([k % N, Math.floor(k/N)]); k = from.get(k); }
+  return path;
+}
+function tapCell(k){
+  if(busy() || performance.now() - swipedAt < 400) return;
+  const x = k % N, y = Math.floor(k/N);
+  if(x === G.pos.x && y === G.pos.y) return;
+  if(blocked(G.cells[k])){ sfx.bump(); say('거기는 들어갈 수 없어. 풀밭이나 상자를 눌러 봐!'); return; }
+  const path = findPath(x,y);
+  if(!path){ say('그 칸까지 가는 길이 막혀 있어. 상자를 먼저 열어 봐!'); return; }
+  walkQ = path;
+  if(!walking) walkLoop();
+}
+function walkLoop(){
+  if(!walkQ.length || busy()){ walking = false; return; }
+  walking = true;
+  const [x,y] = walkQ.shift();
+  if(!stepTo(x,y)){ walking = false; return; }
+  setTimeout(walkLoop, 170);
+}
+
+/* ---------- quiz ---------- */
+function openQuiz(k){
+  const star = G.cells[k].t === 'star';
+  let Q, fromReview = false;
+  if(!star && S.review.length && Math.random() < .4){ Q = S.review.shift(); Q.choices = shuffle(Q.choices.slice()); fromReview = true; }
+  else Q = makeQuestion(star);
+  quiz = {k, Q, star, gain: star ? 30 : 10, locked:false, wrong:false};
+  sfx.open();
+  const uname = UNITS.find(u => u.id === Q.unit)?.name || '';
+  const tag = $('qtag');
+  tag.textContent = star ? `★ 별 상자 · ${uname} · 동전 30개` : fromReview ? `아까 틀린 문제 · ${uname}` : `${uname} · 동전 10개`;
+  tag.className = 'tag' + (star ? ' star' : fromReview ? ' review' : '');
+  $('qtext').innerHTML = Q.text || ''; $('qtext').classList.toggle('off', !Q.text);
+  $('qfig').innerHTML = Q.fig || ''; $('qfig').classList.toggle('off', !Q.fig);
+  const qe = $('question');
+  qe.innerHTML = Q.expr || ''; qe.classList.toggle('off', !Q.expr);
+  qe.classList.toggle('mid', !!Q.expr && strip(Q.expr).length > 11);
+  const box = $('choices'); box.innerHTML = '';
+  const maxLen = Math.max(...Q.choices.map(c => strip(c).length));
+  box.className = 'choices' + (maxLen > 5 ? ' long' : '') + (maxLen > 10 ? ' one' : '');
+  Q.choices.forEach((c,i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice'; btn.id = 'choice'+i; btn.dataset.i = i;
+    btn.innerHTML = `<span class="key">${i+1}</span>${c}`;
+    btn.addEventListener('click', () => answer(btn));
+    box.appendChild(btn);
+  });
+  $('feedback').textContent = '답을 누르거나 키보드 숫자로 골라요';
+  $('okBtn').classList.add('off');
+  $('quiz').classList.remove('off');
+  $('quiz').scrollTop = 0;
+  if(finePointer()) setTimeout(() => { const f = $('choice0'); f && f.focus({preventScroll:true}); }, 30);
+}
+function answer(btn){
+  if(!quiz || quiz.locked) return;
+  quiz.locked = true;
+  const {Q, k, gain:base} = quiz;
+  const chosen = Q.choices[+btn.dataset.i];
+  const all = [...document.querySelectorAll('.choice')];
+  all.forEach(x => x.disabled = true);
+  const blank = $('question').querySelector('.ans');
+  if(blank) blank.innerHTML = Q.ansShow != null ? Q.ansShow : Q.ans;
+  if(chosen === Q.ans){
+    btn.classList.add('right');
+    streak++; S.solved++; S.best = Math.max(S.best, streak);
+    const bonus = streak % 5 === 0, gain = base + (bonus ? 20 : 0);
+    sfx.right(); setMood('happy'); anim('cheer');
+    flyCoins(btn, Math.min(6, Math.round(gain/10)));
+    $('feedback').innerHTML = bonus ? `<b>${streak}연속 정답! 보너스 20개</b>` : `<b>${pick(CHEERS)}</b> 동전 ${gain}개`;
+    if(bonus){ const c = document.createElement('div'); c.className = 'combo'; c.textContent = streak + '연속!'; $('qcard').appendChild(c); setTimeout(() => c.remove(), 1300); }
+    setTimeout(() => { S.coins += gain; renderCoins(true); save(); }, 550);
+    setTimeout(() => {
+      closeQuiz();
+      G.cells[k].t = 'done'; renderCell(k, true);
+      renderStatus(); renderShop();
+      const left = boxesLeft();
+      say(left ? `상자 열기 성공! 남은 상자 ${left}개.` : '마지막 상자까지 다 열었어!');
+      if(!left) setTimeout(stageClear, 500);
+    }, bonus ? 1500 : 1150);
+  } else {
+    btn.classList.add('wrong');
+    all.find(x => Q.choices[+x.dataset.i] === Q.ans).classList.add('right');
+    streak = 0; sfx.wrong(); setMood('sad'); anim('shake');
+    try{ navigator.vibrate && navigator.vibrate(60); }catch(e){}
+    if(S.review.length < 20) S.review.push(Q);
+    quiz.wrong = true;
+    $('feedback').innerHTML = `<b>아깝다! 정답은 ${Q.ans}</b><span class="explain">${Q.explain}</span>`;
+    $('okBtn').classList.remove('off');
+    if(finePointer()) setTimeout(() => $('okBtn').focus({preventScroll:true}), 30);
+    save();
+  }
+  renderStatus();
+}
+$('okBtn').addEventListener('click', () => {
+  if(!quiz || !quiz.wrong) return;
+  closeQuiz();
+  G.pos = {...G.prev}; placePanda(); anim('hop');
+  renderStatus();
+  say('괜찮아! 상자에 다시 들어가면 새 문제가 나와. 틀린 문제는 나중에 또 나올 거야.');
+});
+function closeQuiz(){ quiz = null; $('quiz').classList.add('off'); }
+function stageClear(){
+  const bonus = 20 + S.stage*5;
+  S.coins += bonus; renderCoins(true);
+  sfx.clear(); setMood('happy'); anim('cheer');
+  $('clearTitle').textContent = S.stage + '단계 통과!';
+  const harder = lvOf(S.stage+1) > lvOf(S.stage);
+  $('clearText').textContent = `보너스 동전 ${bonus}개를 받았어. ${harder ? '다음 단계부터는 문제가 조금 더 어려워져!' : '다음 단계도 힘내자!'}`;
+  $('clear').classList.remove('off');
+  S.stage++; S.topStage = Math.max(S.topStage, S.stage); save();
+  renderShop();
+  if(finePointer()) setTimeout(() => $('nextBtn').focus({preventScroll:true}), 30);
+}
+function goNext(){ if($('clear').classList.contains('off')) return; $('clear').classList.add('off'); newStage(); }
+$('nextBtn').addEventListener('click', goNext);
+$('clear').addEventListener('click', e => { if(e.target === $('clear')) goNext(); });
+
+/* ---------- units ---------- */
+function renderUnits(){
+  const box = $('units'); box.innerHTML = '';
+  UNITS.forEach(u => {
+    const b = document.createElement('button');
+    b.className = 'tbl'; b.id = 'unit-' + u.id; b.textContent = u.name;
+    b.setAttribute('aria-pressed', S.units.includes(u.id));
+    b.addEventListener('click', () => {
+      if(S.units.includes(u.id)){
+        if(S.units.length === 1){ say('적어도 한 단원은 골라야 해!'); return; }
+        S.units = S.units.filter(x => x !== u.id);
+      } else S.units = ALL_UNITS.filter(x => x === u.id || S.units.includes(x));
+      renderUnits(); save();
+    });
+    box.appendChild(b);
+  });
+  const all = document.createElement('button');
+  all.className = 'tbl'; all.id = 'unit-all'; all.textContent = '전체';
+  all.setAttribute('aria-pressed', S.units.length === ALL_UNITS.length);
+  all.addEventListener('click', () => { S.units = ALL_UNITS.slice(); renderUnits(); save(); });
+  box.appendChild(all);
+}
+
+/* ---------- shop ---------- */
+function renderShop(){
+  const box = $('shop'); box.innerHTML = '';
+  ITEMS.forEach(it => {
+    const own = !!S.owned[it.id], on = S.equip[it.slot] === it.id;
+    const row = document.createElement('div');
+    row.className = 'item' + (on ? ' equipped' : '');
+    row.innerHTML = it.icon + '<span class="nm"></span>';
+    row.querySelector('.nm').textContent = it.name;
+    const btn = document.createElement('button'); btn.id = 'buy-' + it.id;
+    if(!own){
+      const poor = S.coins < it.price;
+      btn.innerHTML = `<span class="mini"></span>${it.price} ${poor ? '' : '사기'}`;
+      btn.className = poor ? 'poor' : '';
+      btn.setAttribute('aria-label', `${it.name} 동전 ${it.price}개로 사기` + (poor ? ' (동전 부족)' : ''));
+      btn.addEventListener('click', () => {
+        if(S.coins < it.price){ say(`${it.name}을(를) 사려면 동전 ${it.price}개가 필요해. 지금 ${S.coins}개 있어.`); return; }
+        S.coins -= it.price; S.owned[it.id] = true; S.equip[it.slot] = it.id;
+        sfx.buy(); setMood('happy'); anim('cheer'); say(`${it.name} 고마워! 잘 어울려?`);
+        renderCoins(true); renderPanda(); renderShop(); save();
+      });
+    } else {
+      btn.textContent = on ? '입는 중' : '입기';
+      btn.className = on ? 'on' : 'wear';
+      btn.setAttribute('aria-pressed', on);
+      btn.addEventListener('click', () => {
+        S.equip[it.slot] = on ? null : it.id;
+        if(!on){ setMood('happy'); anim('cheer'); }
+        renderPanda(); renderShop(); save();
+      });
+    }
+    row.appendChild(btn); box.appendChild(row);
+  });
+  // red dot on the shop button when something new can be bought
+  $('shopDot').classList.toggle('off', !ITEMS.some(it => !S.owned[it.id] && S.coins >= it.price));
+}
+
+/* ---------- bottom sheets ---------- */
+let openSheet = null;
+function showSheet(id){
+  walkQ = [];
+  openSheet = id;
+  $(id).classList.remove('off'); $('sheetBack').classList.remove('off');
+  $(id).scrollTop = 0;
+  if(finePointer()) setTimeout(() => { const c = $(id).querySelector('[data-close]'); c && c.focus({preventScroll:true}); }, 30);
+}
+function hideSheet(){
+  if(!openSheet) return;
+  const back = openSheet === 'unitSheet' ? 'openUnits' : 'openShop';
+  $(openSheet).classList.add('off'); $('sheetBack').classList.add('off');
+  openSheet = null;
+  if(finePointer()) $(back).focus({preventScroll:true});
+}
+$('openUnits').addEventListener('click', () => { if(!quiz) showSheet('unitSheet'); });
+$('openShop').addEventListener('click', () => { if(!quiz) showSheet('shopSheet'); });
+$('sheetBack').addEventListener('click', hideSheet);
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', hideSheet));
+
+/* ---------- swipe on the map ---------- */
+let swipedAt = 0, touchStart = null;
+$('board').addEventListener('pointerdown', e => { touchStart = {x:e.clientX, y:e.clientY}; });
+$('board').addEventListener('pointercancel', () => { touchStart = null; });
+$('board').addEventListener('pointerup', e => {
+  if(!touchStart) return;
+  const dx = e.clientX - touchStart.x, dy = e.clientY - touchStart.y;
+  touchStart = null;
+  const dist = Math.max(Math.abs(dx), Math.abs(dy));
+  if(dist < 24 || busy()) return;
+  swipedAt = performance.now();
+  const cell = $('board').getBoundingClientRect().width / N;
+  const steps = Math.max(1, Math.min(N-1, Math.round(dist / cell)));
+  const [sx, sy] = Math.abs(dx) > Math.abs(dy) ? [Math.sign(dx), 0] : [0, Math.sign(dy)];
+  if(sx) G.flip = sx < 0;
+  const path = [];
+  let x = G.pos.x, y = G.pos.y;
+  for(let i=0;i<steps;i++){
+    x += sx; y += sy;
+    if(!canEnter(x,y)) break;
+    path.push([x,y]);
+    const t = G.cells[idx(x,y)].t;
+    if(t === 'box' || t === 'star') break;
+  }
+  if(!path.length){ tryMove(sx, sy); return; }
+  walkQ = path;
+  if(!walking) walkLoop();
+});
+
+/* ---------- d-pad: tap to step, hold to keep walking ---------- */
+function holdButton(id, dx, dy){
+  const b = $(id); let timer = null, viaPointer = false;
+  const stop = () => { clearInterval(timer); timer = null; b.classList.remove('held'); };
+  b.addEventListener('pointerdown', e => {
+    e.preventDefault(); viaPointer = true;
+    lastMove = 0; tryMove(dx, dy);
+    b.classList.add('held');
+    clearInterval(timer);
+    timer = setInterval(() => { if(busy()) return stop(); lastMove = 0; tryMove(dx, dy); }, 190);
+  });
+  ['pointerup','pointerleave','pointercancel'].forEach(ev => b.addEventListener(ev, stop));
+  b.addEventListener('click', () => { if(viaPointer){ viaPointer = false; return; } tryMove(dx, dy); });
+  b.addEventListener('contextmenu', e => e.preventDefault());
+}
+
+/* ---------- input ---------- */
+holdButton('mvU', 0, -1);
+holdButton('mvD', 0, 1);
+holdButton('mvL', -1, 0);
+holdButton('mvR', 1, 0);
+document.addEventListener('keydown', e => {
+  if(openSheet){ if(e.key === 'Escape'){ e.preventDefault(); hideSheet(); } return; }
+  if(quiz){
+    if(quiz.wrong && (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape')){ e.preventDefault(); $('okBtn').click(); return; }
+    const i = +e.key - 1;
+    if(i >= 0 && i < 4){ const b = $('choice'+i); if(b && !b.disabled) b.click(); }
+    return;
+  }
+  if(!$('clear').classList.contains('off')){
+    if(e.key === 'Escape' || e.key === 'Enter' || e.key === ' '){ e.preventDefault(); goNext(); }
+    return;
+  }
+  const map = {ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]};
+  const m = map[e.key];
+  if(m && !e.target.closest('.shop, .units')){ e.preventDefault(); tryMove(...m); }
+});
+$('soundBtn').addEventListener('click', () => { sound = !sound; applySound(); try{ localStorage.setItem(KEY+'-sound', sound ? '1' : '0'); }catch(e){} });
+function applySound(){
+  $('muteX').classList.toggle('off', sound);
+  $('waveA').classList.toggle('off', !sound); $('waveB').classList.toggle('off', !sound);
+  $('soundBtn').setAttribute('aria-label', sound ? '소리 끄기' : '소리 켜기');
+}
+
+function start(data){
+  S = data && data.S ? data.S : load();
+  // review items from older versions were plain [a,b] pairs
+  S.review = (S.review || []).filter(q => q && !Array.isArray(q) && q.choices && q.ans);
+  if(!Array.isArray(S.units) || !S.units.length) S.units = ALL_UNITS.slice();
+  S.units = S.units.filter(id => ALL_UNITS.includes(id));
+  if(!S.units.length) S.units = ALL_UNITS.slice();
+  streak = (data && data.streak) || 0;
+  try{ if(localStorage.getItem(KEY+'-sound') === '0') sound = false; }catch(e){}
+  applySound();
+  renderCoins(); renderPanda(); renderShop(); renderUnits();
+  if(data && data.G){ G = data.G; renderBoard(); placePanda(true); renderStatus(); say('계속 탐험하자!'); }
+  else newStage();
+  if(S.solved > 0 && !(data && data.G)) say(`다시 왔구나! ${S.stage}단계부터 이어서 하자. ? 상자를 찾아가 봐!`);
+  window.claude?.hot?.snapshot?.(() => ({S, G, streak}));
+}
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
+
+<script>
+if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('./sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>
